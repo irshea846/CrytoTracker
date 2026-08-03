@@ -1,10 +1,24 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.buildconfig)
+}
+
+val envProperties = Properties().apply {
+    val envFile = rootProject.file(".env")
+    if (envFile.exists()) {
+        load(envFile.inputStream())
+    }
+}
+
+buildConfig {
+    packageName("com.rshea.cryptotracker")
+    buildConfigField("MY_API_KEY", envProperties.getProperty("MY_API_KEY") ?: "")
 }
 
 kotlin {

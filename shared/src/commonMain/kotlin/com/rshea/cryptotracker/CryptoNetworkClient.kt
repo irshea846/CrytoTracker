@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
  * Ktor automatically selects OkHttp on Android and Darwin on iOS behind the scenes.
  */
 object CryptoNetworkClient {
-    val MY_API_KEY = "CG-5NLHdJoJNbWZcpTCwceE64RA"
+    val MY_API_KEY = BuildConfig.MY_API_KEY
     val httpClient = HttpClient {
         install(ContentNegotiation) {
             json(Json {

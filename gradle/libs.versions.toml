@@ -14,6 +14,7 @@ junit = "4.13.2"
 kotlin = "2.4.10"
 material3 = "1.11.0-alpha07"
 ktor = "3.5.2" # Standard stable Ktor version for 2026
+buildconfig = "6.0.10"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -47,3 +48,4 @@ androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library",
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
