@@ -1,23 +1,14 @@
 package com.rshea.cryptotracker.presentation
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rshea.cryptotracker.data.CryptoApiService
-
 import kotlinx.coroutines.launch
-
 @Composable
 fun App(
     // 1. Dependency Inversion: Pass the service into the screen function as a parameter boundary
@@ -25,7 +16,6 @@ fun App(
 ) {
     MaterialTheme {
         val coroutineScope = rememberCoroutineScope()
-
         var rawJsonResult by remember { mutableStateOf("Click button to load live data...") }
         var isLoading by remember { mutableStateOf(false) }
 
@@ -34,6 +24,14 @@ fun App(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // 1. Structural Header Title Layout Element
+            Text(
+                text = "Crypto Tracker 2026",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+
+            // 2. Action Event Button Hook
             Button(
                 onClick = {
                     isLoading = true
@@ -48,18 +46,41 @@ fun App(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(bottom = 56.dp),
+                enabled = !isLoading
             ) {
-                Text(if (isLoading) "Fetching market statistics..." else "Pull Live Crypto Prices")
+                Text("Trigger API Pull Event")
             }
 
-            // Simple log display container replacing old TextView structures
-            Card(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                LazyColumn(modifier = Modifier.padding(8.dp)) {
-                    item {
-                        Text(text = rawJsonResult, style = MaterialTheme.typography.bodySmall)
+            // 3. Clear Empty Physical Layout Spacer (Replaces old XML Margin attributes)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 4. Dynamic Screen Content-State Branching Execution Pipeline
+            if (isLoading) {
+                // Centered Loading Spinner Container View (XML FrameLayout Equivalent)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            } else {
+                // Themed Result Data Card Container Block
+                Card(modifier = Modifier.fillMaxWidth().weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                    LazyColumn(modifier = Modifier.padding(16.dp)) {
+                        item {
+                            Text(
+                                text = rawJsonResult,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
+
             }
         }
     }
