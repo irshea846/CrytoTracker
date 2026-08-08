@@ -2,12 +2,15 @@ package com.rshea.cryptotracker.presentation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rshea.cryptotracker.data.CryptoApiService
+import com.rshea.cryptotracker.domain.CryptoAssetDto
 import kotlinx.coroutines.launch
 @Composable
 fun App(
@@ -16,7 +19,8 @@ fun App(
 ) {
     MaterialTheme {
         val coroutineScope = rememberCoroutineScope()
-        var rawJsonResult by remember { mutableStateOf("Click button to load live data...") }
+        var cryptoList by remember { mutableStateOf<List<CryptoAssetDto>>(emptyList()) }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
         var isLoading by remember { mutableStateOf(false) }
 
         Column(
@@ -38,9 +42,9 @@ fun App(
                     coroutineScope.launch {
                         try {
                             // Asynchronously fetch raw data on a safe background thread context
-                            rawJsonResult = apiService.fetchLiveMarketData()
+                            cryptoList = apiService.fetchLiveMarketData()
                         } catch (e: Exception) {
-                            rawJsonResult = "Network Error: ${e.message}"
+                            errorMessage = "Network Error: ${e.message}"
                         } finally {
                             isLoading = false
                         }
@@ -59,28 +63,45 @@ fun App(
             if (isLoading) {
                 // Centered Loading Spinner Container View (XML FrameLayout Equivalent)
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-            } else {
+            } else if (errorMessage != null) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                }
+            } else{
                 // Themed Result Data Card Container Block
-                Card(modifier = Modifier.fillMaxWidth().weight(1f),
+                Card(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
+                ) {
                     LazyColumn(modifier = Modifier.padding(16.dp)) {
-                        item {
-                            Text(
-                                text = rawJsonResult,
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                        // This loops through your list and binds each coin to its own row layout
+                        items(cryptoList) { crypto ->
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                Text(
+                                    text = "${crypto.name} (${crypto.symbol.uppercase()})",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "Price: $${crypto.current_price} | Market Cap: $${crypto.market_cap}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    thickness = DividerDefaults.Thickness,
+                                    color = DividerDefaults.color
+                                )
+                            }
                         }
                     }
                 }
-
             }
         }
     }
