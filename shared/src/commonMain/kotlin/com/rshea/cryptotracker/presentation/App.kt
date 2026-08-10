@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rshea.cryptotracker.data.CryptoApiService
+import com.rshea.cryptotracker.data.toDomainModelList
+import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.CryptoAssetDto
 import kotlinx.coroutines.launch
 @Composable
@@ -19,7 +21,7 @@ fun App(
 ) {
     MaterialTheme {
         val coroutineScope = rememberCoroutineScope()
-        var cryptoList by remember { mutableStateOf<List<CryptoAssetDto>>(emptyList()) }
+        var cryptoList by remember { mutableStateOf<List<CryptoAsset>>(emptyList()) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var isLoading by remember { mutableStateOf(false) }
 
@@ -42,7 +44,8 @@ fun App(
                     coroutineScope.launch {
                         try {
                             // Asynchronously fetch raw data on a safe background thread context
-                            cryptoList = apiService.fetchLiveMarketData()
+                            // Execute pipeline fetch and map the results upward instantly
+                            cryptoList = apiService.fetchLiveMarketData().toDomainModelList() // Clean domain translation                            cryptoList = apiService.fetchLiveMarketData()
                         } catch (e: Exception) {
                             errorMessage = "Network Error: ${e.message}"
                         } finally {
@@ -86,12 +89,18 @@ fun App(
                         items(cryptoList) { crypto ->
                             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                                 Text(
-                                    text = "${crypto.name} (${crypto.symbol.uppercase()})",
+                                    text = "${crypto.name} (${crypto.symbol})",
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
-                                    text = "Price: $${crypto.current_price} | Market Cap: $${crypto.market_cap}",
+                                    text = "Price: ${crypto.priceUsd} | Cap: ${crypto.marketCapUsd}",
                                     style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = crypto.priceChange24hText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    // Dynamically styles text color based on business logic flags!
+                                    color = if (crypto.isPricePositive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                                 )
                                 HorizontalDivider(
                                     modifier = Modifier.padding(top = 8.dp),
