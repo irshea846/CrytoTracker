@@ -23,22 +23,20 @@ fun CryptoAssetDto.toDomainModel(): CryptoAsset {
     // function is the cleaner path. Since Java's String.format() isn't fully available in Kotlin
     // Multiplatform common code yet, the cleanest KMP-native way to round a Double to exactly two
     // decimal places is to use a simple math helper:
-    // Replace your manual .take(4) logic inside CryptoAssetMapper.kt with this:
-    val roundedCap = ((this.market_cap / 1_000_000_000.0) * 100).roundToInt() / 100.0
-    val formattedCap = "$${roundedCap}B"
-
     // 2. Format Market Cap Text into readable shorthand notations (Billions/Trillions)
-    //    val formattedCap = when {
-    //        this.market_cap >= 1_000_000_000_000.0 -> "$${
-    //            (this.market_cap / 1_000_000_000_000.0).toString().take(4)
-    //        }T"
-    //
-    //        this.market_cap >= 1_000_000_000.0 -> "$${
-    //            (this.market_cap / 1_000_000_000.0).toString().take(4)
-    //        }B"
-    //
-    //        else -> "$${this.market_cap}"
-    //    }
+    val formattedCap = when {
+        this.market_cap >= 1_000_000_000_000.0 -> {
+            val rounded = ((this.market_cap / 1_000_000_000_000.0) * 100).roundToInt() / 100.0
+            "$${rounded.toString().padEnd(4, '0').take(4)}T"
+        }
+
+        this.market_cap >= 1_000_000_000.0 -> {
+            val rounded = ((this.market_cap / 1_000_000_000.0) * 100).roundToInt() / 100.0
+            "$${rounded.toString().padEnd(4, '0').take(4)}B"
+        }
+
+        else -> "$${this.market_cap}"
+    }
 
     // 3. Determine positive trend state metrics
     val isPositive = this.price_change_percentage_24h >= 0.0
