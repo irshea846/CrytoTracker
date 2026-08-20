@@ -3,17 +3,15 @@ package com.rshea.cryptotracker
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.lifecycle.compose.viewModel // ◄── Crucial Android compose helper import
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rshea.cryptotracker.data.CryptoRepositoryImpl
 import com.rshea.cryptotracker.presentation.App
 import com.rshea.cryptotracker.presentation.CryptoListViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        //enableEdgeToEdge()
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         setContent {
