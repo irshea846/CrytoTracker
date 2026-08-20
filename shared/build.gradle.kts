@@ -59,6 +59,8 @@ kotlin {
             implementation(libs.ktor.client.okhttp) // Native Android engine
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
+            implementation(libs.androidx.lifecycle.viewmodel.compose) // ◄── Add this line here
+            implementation(libs.androidx.activity.compose) // Ensures ComponentActivity dependencies link up
         }
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
@@ -72,8 +74,8 @@ kotlin {
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.runtime.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
