@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.UIResourceState
 
 @Composable
@@ -50,81 +51,9 @@ fun App(
                     contentAlignment = Alignment.Center
                 ) {
                     when (val state = screenState) {
-                        is UIResourceState.Loading -> {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.primary,
-                                strokeWidth = 4.dp
-                            )
-                        }
-                        is UIResourceState.Error -> {
-                            Text(
-                                text = state.message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        is UIResourceState.Success -> {
-                            if (state.data.isEmpty()) {
-                                Text(
-                                    text = "No asset loaded. Click trigger to query.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            } else {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(state.data) { crypto ->
-                                        // Polish Card Component Wrapper
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                            )
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Column {
-                                                    Text(
-                                                        text = crypto.name,
-                                                        style = MaterialTheme.typography.titleMedium,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                    Text(
-                                                        text = crypto.symbol,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        color = MaterialTheme.colorScheme.outline
-                                                    )
-                                                }
-                                                Column(horizontalAlignment = Alignment.End) {
-                                                    Text(
-                                                        text = crypto.priceUsd,
-                                                        style = MaterialTheme.typography.titleMedium,
-                                                        fontWeight = FontWeight.SemiBold
-                                                    )
-                                                    Text(
-                                                        text = crypto.priceChange24hText,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = if (crypto.isPricePositive)
-                                                            MaterialTheme.colorScheme.primary
-                                                        else
-                                                            MaterialTheme.colorScheme.error
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Text(text = "${crypto.name} (${crypto.symbol}): ${crypto.priceUsd}")
-                                    }
-                                }
-                            }
-                        }
+                        is UIResourceState.Loading -> LoadingStateView()
+                        is UIResourceState.Error -> ErrorStateView(message = state.message)
+                        is UIResourceState.Success -> SuccessStateView(cryptoAssets = state.data)
                     }
                 }
 
@@ -144,6 +73,87 @@ fun App(
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingStateView() {
+    CircularProgressIndicator(
+        color = MaterialTheme.colorScheme.primary,
+        strokeWidth = 4.dp
+    )
+}
+
+@Composable
+fun ErrorStateView(message: String) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.error,
+        fontWeight = FontWeight.SemiBold
+    )
+}
+
+@Composable
+fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
+    if (cryptoAssets.isEmpty()) {
+        Text(
+            text = "No asset loaded. Click trigger to query.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(cryptoAssets) { crypto ->
+                // Polish Card Component Wrapper
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = crypto.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = crypto.symbol,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = crypto.priceUsd,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = crypto.priceChange24hText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (crypto.isPricePositive)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+                Text(text = "${crypto.name} (${crypto.symbol}): ${crypto.priceUsd}")
             }
         }
     }
