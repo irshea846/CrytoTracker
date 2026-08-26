@@ -1,0 +1,7 @@
+package com.rshea.cryptotracker.database
+
+import app.cash.sqldelight.db.SqlDriver
+
+expect class DatabaseDriverFactory {
+    fun createDriver(): SqlDriver
+}

@@ -1,0 +1,22 @@
+CREATE TABLE CryptoAssetEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    symbol TEXT NOT NULL,
+    name TEXT NOT NULL,
+    priceUsd REAL NOT NULL,
+    changePercent24Hr REAL NOT NULL,
+    supply REAL NOT NULL,
+    marketCapUsd REAL NOT NULL,
+    volumeUsd24Hr REAL NOT NULL,
+    priceChange24hText TEXT NOT NULL,
+    isPricePositive INTEGER NOT NULL -- SQLite stores Booleans natively as 0 (false) or 1 (true)
+);
+
+insertCryptoAsset:
+INSERT OR REPLACE INTO CryptoAssetEntity(id, symbol, name, priceUsd, changePercent24Hr, supply, marketCapUsd, volumeUsd24Hr, priceChange24hText, isPricePositive)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAllCryptoAssets:
+SELECT * FROM CryptoAssetEntity;
+
+deleteAllCryptoAssets:
+DELETE FROM CryptoAssetEntity;

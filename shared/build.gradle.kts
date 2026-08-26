@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.buildconfig)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.sqldelight) // ◄── Triggers the code-generation engine
 }
 
 val envProperties = Properties().apply {
@@ -22,14 +23,26 @@ buildConfig {
     buildConfigField("MY_API_KEY", envProperties.getProperty("MY_API_KEY") ?: "")
 }
 
+// Configure the database schema package mapping
+sqldelight {
+    databases {
+        create("CryptoDatabase") {
+            packageName.set("com.rshea.cryptotracker.database")
+        }
+    }
+}
+
 kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
     listOf(
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "Shared"
-            isStatic = true
+            isStatic = false
         }
     }
     
@@ -40,6 +53,7 @@ kotlin {
     
        compilerOptions {
            jvmTarget = JvmTarget.JVM_11
+           freeCompilerArgs.add("-Xexpect-actual-classes")
        }
        androidResources {
            enable = true
@@ -61,6 +75,7 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.lifecycle.viewmodel.compose) // ◄── Add this line here
             implementation(libs.androidx.activity.compose) // Ensures ComponentActivity dependencies link up
+            implementation(libs.sqldelight.android.driver) // Native Android SQLite handle
         }
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
@@ -76,6 +91,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutine) // For streaming DB entries as Flow
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -87,6 +104,7 @@ kotlin {
             dependsOn(commonMain.get())
             dependencies {
                 implementation(libs.ktor.client.darwin)
+                implementation(libs.sqldelight.native.driver) // Native Apple CoreData/SQLite handle
             }
         }
         val iosArm64Main by getting {
