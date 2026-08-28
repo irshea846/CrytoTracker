@@ -1,5 +1,11 @@
 package com.rshea.cryptotracker.data
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import com.rshea.cryptotracker.database.CryptoDatabase
 import com.rshea.cryptotracker.database.DatabaseDriverFactory
 import com.rshea.cryptotracker.domain.CryptoAsset
@@ -15,8 +21,36 @@ class CryptoRepositoryImpl(
     private val apiService: CryptoApiService = CryptoApiService()
 ) : CryptoRepository {
 
+    // 1. Update your domain repository contract interface to declare this streaming channel:
+    // fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>>
+
+    /**
+     * Turns your local SQLite storage layer into a live Reactive Stream.
+     * Whenever any transaction writes or deletes rows inside the 'cryptoAssetEntity' table,
+     * this Flow instantly re-queries the table and emits the updated list to observers.
+     */
+
     private val database = CryptoDatabase(driverFactory.createDriver())
     private val queries = database.cryptoDatabaseQueries
+
+    override fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>> {
+        return queries.getAllCryptoAssets()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { cachedEntities ->
+                cachedEntities.map { entity ->
+                    CryptoAsset(
+                        id = entity.id,
+                        symbol = entity.symbol,
+                        name = entity.name,
+                        priceUsd = "$${entity.priceUsd}",
+                        marketCapUsd = entity.marketCapUsd.toString(),
+                        priceChange24hText = "${entity.priceChange24hText}%",
+                        isPricePositive = entity.isPricePositive == 1L
+                   )
+                }
+            }
+    }
 
     override suspend fun getTrackedCryptoAssets(): UIResourceState<List<CryptoAsset>> {
         return try {
