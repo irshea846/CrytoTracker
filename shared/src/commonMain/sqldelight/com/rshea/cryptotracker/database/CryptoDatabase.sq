@@ -15,8 +15,8 @@ insertCryptoAsset:
 INSERT OR REPLACE INTO CryptoAssetEntity(id, symbol, name, priceUsd, changePercent24Hr, supply, marketCapUsd, volumeUsd24Hr, priceChange24hText, isPricePositive)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-selectAllCryptoAssets:
+getAllCryptoAssets:
 SELECT * FROM CryptoAssetEntity;
 
-deleteAllCryptoAssets:
+clearCryptoTable:
 DELETE FROM CryptoAssetEntity;
