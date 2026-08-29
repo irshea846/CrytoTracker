@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             // 1. Initialize your repository implementation container dependency
-            val repository = CryptoRepositoryImpl(androidDriverFactory, apiService)
+            val repository = CryptoRepositoryImpl(androidDriverFactory.createDriver(), apiService)
 
             // 2. Use Android's standard retained viewmodel factory block
             // This ensures your ViewModel survives native screen rotations!

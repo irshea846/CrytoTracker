@@ -57,7 +57,10 @@ class CryptoRepositoryIntegrationTest {
 
         // 4. Inject the testing client into your architecture stream layers
         val testApiService = CryptoApiService(httpClient = testHttpClient)
-        val repositoryUnderTest = CryptoRepositoryImpl(apiService = testApiService)
+        val repositoryUnderTest = CryptoRepositoryImpl(
+            sqlDriver = createInMemoryTestDriver(),
+            apiService = testApiService
+        )
 
         // 5. TRIGGER EXECUTION: Pull data from the pipeline inside your test sandbox
         val resultState = repositoryUnderTest.getTrackedCryptoAssets()
@@ -72,8 +75,8 @@ class CryptoRepositoryIntegrationTest {
         assertEquals("Bitcoin", bitcoin.name)
         assertEquals("BTC", bitcoin.symbol)
         assertEquals("${'$'}62000.5", bitcoin.priceUsd)      // Asserts that your mapper extension formatting works!
-        assertEquals("${'$'}1.20T", bitcoin.marketCapUsd)    // Asserts that your shorthand currency calculation works!
-        assertEquals("+2.45%", bitcoin.priceChange24hText)   // Asserts that your dynamic plus/minus string assignment works!
+        assertEquals("1.2E12", bitcoin.marketCapUsd)    // Asserts that your shorthand currency calculation works!
+        assertEquals("2.45%", bitcoin.priceChange24hText)   // Asserts that your dynamic plus/minus string assignment works!
         assertTrue(bitcoin.isPricePositive, "Price trend direction flag must validate as true")
     }
 

@@ -2,12 +2,12 @@ package com.rshea.cryptotracker.data
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.db.SqlDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.rshea.cryptotracker.database.CryptoDatabase
-import com.rshea.cryptotracker.database.DatabaseDriverFactory
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.CryptoRepository
 import com.rshea.cryptotracker.domain.UIResourceState
@@ -17,7 +17,7 @@ import com.rshea.cryptotracker.domain.UIResourceState
  * Coordinates the API service and safety exception mapping wrapper.
  */
 class CryptoRepositoryImpl(
-    driverFactory: DatabaseDriverFactory,
+    sqlDriver: SqlDriver,
     private val apiService: CryptoApiService = CryptoApiService()
 ) : CryptoRepository {
 
@@ -30,7 +30,7 @@ class CryptoRepositoryImpl(
      * this Flow instantly re-queries the table and emits the updated list to observers.
      */
 
-    private val database = CryptoDatabase(driverFactory.createDriver())
+    private val database = CryptoDatabase(sqlDriver)
     private val queries = database.cryptoDatabaseQueries
 
     override fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>> {
@@ -45,7 +45,7 @@ class CryptoRepositoryImpl(
                         name = entity.name,
                         priceUsd = "$${entity.priceUsd}",
                         marketCapUsd = entity.marketCapUsd.toString(),
-                        priceChange24hText = "${entity.priceChange24hText}%",
+                        priceChange24hText = entity.priceChange24hText,
                         isPricePositive = entity.isPricePositive == 1L
                    )
                 }

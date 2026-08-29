@@ -6,6 +6,8 @@ import com.rshea.cryptotracker.domain.UIResourceState
 import com.rshea.cryptotracker.presentation.CryptoListViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -44,6 +46,10 @@ class CryptoListViewModelTest {
             } else {
                 UIResourceState.Success(mockDataList)
             }
+        }
+
+        override fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>> {
+            return flowOf(mockDataList)
         }
 
     }

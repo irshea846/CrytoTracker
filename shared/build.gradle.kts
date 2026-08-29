@@ -100,6 +100,21 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
+        // ADD THIS LAYER: Ensures the local JVM test engines can index the JDBC driver files natively!
+        // FIXED: Inject the JVM driver explicitly into your template's host-test group!
+        val androidHostTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.sqlite.driver)
+            }
+        }
+
+        val androidDeviceTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.android.driver)
+                implementation(libs.androidx.testExt.junit)
+            }
+        }
+
         val iosMain by creating {
             dependsOn(commonMain.get())
             dependencies {
@@ -107,12 +122,28 @@ kotlin {
                 implementation(libs.sqldelight.native.driver) // Native Apple CoreData/SQLite handle
             }
         }
+
+        // 2. FIXED: Universal iOS Test Mapping
+        // Creates a common iosTest folder that automatically distributes the actual code to all Apple chips
+        val iosTest by creating {
+            dependsOn(commonTest.get())
+        }
+
+        // Loop through your active Apple configurations to feed them the common iosTest source directory
+        val iosTargets = listOf(iosArm64(), iosSimulatorArm64()) // Match your template's specific ios list
+        iosTargets.forEach { target ->
+            target.compilations.getByName("test").defaultSourceSet.dependsOn(iosTest)
+        }
+
         val iosArm64Main by getting {
             dependsOn(iosMain)
         }
+
         val iosSimulatorArm64Main by getting {
             dependsOn(iosMain)
         }
+
+
     }
 }
 
