@@ -18,7 +18,7 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
 
     // 3. Inject BOTH components directly into your cross-platform repository constructor!
     val repository = CryptoRepositoryImpl(
-        iosDriverFactory,
+        iosDriverFactory.createDriver(),
         apiService
     )
 
