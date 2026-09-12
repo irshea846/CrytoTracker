@@ -36,11 +36,15 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-    listOf(
+
+    // 1. Define iOS Targets once (Apple Silicon only to avoid Intel dependency issues)
+    val iosTargets = listOf(
         iosArm64(),
         iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    )
+
+    iosTargets.forEach { target ->
+        target.binaries.framework {
             baseName = "Shared"
             isStatic = false
         }
@@ -129,21 +133,10 @@ kotlin {
             dependsOn(commonTest.get())
         }
 
-        // Loop through your active Apple configurations to feed them the common iosTest source directory
-        val iosTargets = listOf(iosArm64(), iosSimulatorArm64()) // Match your template's specific ios list
         iosTargets.forEach { target ->
+            target.compilations.getByName("main").defaultSourceSet.dependsOn(iosMain)
             target.compilations.getByName("test").defaultSourceSet.dependsOn(iosTest)
         }
-
-        val iosArm64Main by getting {
-            dependsOn(iosMain)
-        }
-
-        val iosSimulatorArm64Main by getting {
-            dependsOn(iosMain)
-        }
-
-
     }
 }
 

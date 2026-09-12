@@ -22,6 +22,9 @@ class CryptoDatabaseTest {
         val driver = createInMemoryTestDriver()
         database = CryptoDatabase(driver)
         queries = database.cryptoDatabaseQueries
+        
+        // 3. FORCE CLEAN SLATE: Ensure no data leaks between test methods
+        queries.clearCryptoTable()
     }
 
     @Test

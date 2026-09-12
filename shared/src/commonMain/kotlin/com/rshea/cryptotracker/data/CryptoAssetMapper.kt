@@ -2,6 +2,7 @@ package com.rshea.cryptotracker.data
 
 import com.rshea.cryptotracker.domain.CryptoAssetDto
 import com.rshea.cryptotracker.domain.CryptoAsset
+import com.rshea.cryptotracker.util.formatToTwoDecimals
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -11,8 +12,8 @@ import kotlin.math.roundToInt
  */
 
 fun CryptoAssetDto.toDomainModel(): CryptoAsset {
-    // 1. Format Currency Text safely
-    val formattedPrice = "$${this.current_price.toString()}"
+    // 1. Format the current price string seamlessly using common math helper
+    val formattedPrice = "$${this.current_price.formatToTwoDecimals()}"
 
     // The Bug: Using .toString().take(4) on a calculated number doesn't look at the decimal point.
     // If your division results in 1.2345, .take(4) turns it into 1.23 (which looks fine).

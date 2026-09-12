@@ -22,12 +22,11 @@ class CryptoListViewModel(
     private val _screenState = MutableStateFlow<UIResourceState<List<CryptoAsset>>>(UIResourceState.Loading)
 
     // Read-only StateFlow exposed cleanly to your Compose view layer
-    //val screenState: StateFlow<UIResourceState<List<CryptoAsset>>> = _screenState.asStateFlow()
     // FIXED: The entire reactive pipeline is now defined as a single declarative property!
     val screenState: StateFlow<UIResourceState<List<CryptoAsset>>> = repository
         .observeCryptoAssetsStream()  // 1. Read the cold database Flow stream channel
         .map { cryptoList -> // 2. Catch emissions and map them to our type-safe State wrapper
-            UIResourceState.Success(cryptoList)
+            if (cryptoList.isEmpty()) UIResourceState.Loading else UIResourceState.Success(cryptoList)
         }
         .stateIn( // 3. Transform the cold Flow pipeline into a hot, read-only StateFlow!
             scope = viewModelScope,

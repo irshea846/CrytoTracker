@@ -7,8 +7,11 @@ import com.rshea.cryptotracker.presentation.CryptoListViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -49,7 +52,8 @@ class CryptoListViewModelTest {
         }
 
         override fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>> {
-            return flowOf(mockDataList)
+            // Emits an empty list initially to simulate an empty cache, then emits the mock data
+            return flowOf(emptyList(), mockDataList)
         }
 
     }
@@ -72,14 +76,19 @@ class CryptoListViewModelTest {
         val fakeRepository = FakeCryptoRepository()
         val viewModelUnderTest = CryptoListViewModel(repository = fakeRepository)
 
-        // ASSERTION 1: Initial state must be initialized as a flat Success container containing empty arrays
-        assertTrue(viewModelUnderTest.screenState.value is UIResourceState.Success)
-        assertEquals(0, (viewModelUnderTest.screenState.value as UIResourceState.Success).data.size)
+        // IMPORTANT: StateFlow with SharingStarted.WhileSubscribed needs at least one collector 
+        // to start the upstream flow pipeline! We launch a background collector here.
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModelUnderTest.screenState.collect {}
+        }
+
+        // ASSERTION 1: Initial state must be initialized as a Loading container (since DB starts empty)
+        assertTrue(viewModelUnderTest.screenState.value is UIResourceState.Loading)
 
         // TRIGGER ACTION: Fire the asynchronous remote data query hook
         viewModelUnderTest.loadCryptoMarketData()
 
-        // ASSERTION 2: Instantly check the state value before running the clock. It must transition to Loading!
+        // ASSERTION 2: Still Loading (since data hasn't arrived yet)
         assertTrue(viewModelUnderTest.screenState.value is UIResourceState.Loading)
 
         // Advance the coroutine execution virtual clock to let internal launch blocks evaluate
