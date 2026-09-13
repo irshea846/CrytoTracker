@@ -39,3 +39,19 @@ fun Double.formatToTwoDecimals(): String {
     val decimalString = if (decimalPart < 10) "0$decimalPart" else "$decimalPart"
     return "$wholePart.$decimalString"
 }
+
+fun Double.formatToCap(): String {
+    return when {
+        this >= 1_000_000_000_000.0 -> {
+            val rounded = ((this / 1_000_000_000_000.0) * 100).roundToInt() / 100.0
+            "$${rounded.toString().padEnd(4, '0').take(4)}T"
+        }
+
+        this >= 1_000_000_000.0 -> {
+            val rounded = ((this / 1_000_000_000.0) * 100).roundToInt() / 100.0
+            "$${rounded.toString().padEnd(4, '0').take(4)}B"
+        }
+
+        else -> "$${this}"
+    }
+}
