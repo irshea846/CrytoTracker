@@ -19,6 +19,12 @@ fun App(
     // 1. Dependency Inversion: Pass the service into the screen function as a parameter boundary
     viewModel: CryptoListViewModel
 ) {
+    // 1. LIFECYCLE HOOK: Trigger the initial load exactly once when the screen appears.
+    // This prevents infinite loops during recomposition.
+    LaunchedEffect(Unit) {
+        viewModel.loadCryptoMarketData()
+    }
+
     MaterialTheme {
         // 2. Natively collect your StateFlow stream. UI redraws automatically on any state change!
         val screenState by viewModel.screenState.collectAsStateWithLifecycle()
@@ -153,7 +159,22 @@ fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
                         }
                     }
                 }
-                Text(text = "${crypto.name} (${crypto.symbol}): ${crypto.priceUsd}")
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${crypto.name} (${crypto.symbol}): ${crypto.priceUsd}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = crypto.marketCapUsd,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }

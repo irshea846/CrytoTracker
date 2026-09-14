@@ -2,6 +2,7 @@ package com.rshea.cryptotracker.data
 
 import com.rshea.cryptotracker.domain.CryptoAssetDto
 import com.rshea.cryptotracker.domain.CryptoAsset
+import com.rshea.cryptotracker.util.formatToCap
 import com.rshea.cryptotracker.util.formatToTwoDecimals
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -25,19 +26,7 @@ fun CryptoAssetDto.toDomainModel(): CryptoAsset {
     // Multiplatform common code yet, the cleanest KMP-native way to round a Double to exactly two
     // decimal places is to use a simple math helper:
     // 2. Format Market Cap Text into readable shorthand notations (Billions/Trillions)
-    val formattedCap = when {
-        this.market_cap >= 1_000_000_000_000.0 -> {
-            val rounded = ((this.market_cap / 1_000_000_000_000.0) * 100).roundToInt() / 100.0
-            "$${rounded.toString().padEnd(4, '0').take(4)}T"
-        }
-
-        this.market_cap >= 1_000_000_000.0 -> {
-            val rounded = ((this.market_cap / 1_000_000_000.0) * 100).roundToInt() / 100.0
-            "$${rounded.toString().padEnd(4, '0').take(4)}B"
-        }
-
-        else -> "$${this.market_cap}"
-    }
+    val formattedCap = this.market_cap.formatToCap()
 
     // 3. Determine positive trend state metrics
     val isPositive = this.price_change_percentage_24h >= 0.0

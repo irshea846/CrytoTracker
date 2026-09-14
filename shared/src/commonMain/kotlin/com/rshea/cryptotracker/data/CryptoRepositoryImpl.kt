@@ -11,6 +11,8 @@ import com.rshea.cryptotracker.database.CryptoDatabase
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.CryptoRepository
 import com.rshea.cryptotracker.domain.UIResourceState
+import com.rshea.cryptotracker.util.formatToCap
+import com.rshea.cryptotracker.util.formatToTwoDecimals
 
 /**
  * Concrete implementation of the repository contract.
@@ -43,8 +45,8 @@ class CryptoRepositoryImpl(
                         id = entity.id,
                         symbol = entity.symbol,
                         name = entity.name,
-                        priceUsd = "$${entity.priceUsd}",
-                        marketCapUsd = entity.marketCapUsd.toString(),
+                        priceUsd = entity.priceUsd.formatToTwoDecimals(),
+                        marketCapUsd = entity.marketCapUsd.formatToCap(),
                         priceChange24hText = entity.priceChange24hText,
                         isPricePositive = entity.isPricePositive == 1L
                    )
@@ -84,8 +86,8 @@ class CryptoRepositoryImpl(
                         id = entity.id,
                         symbol = entity.symbol,
                         name = entity.name,
-                        priceUsd = "$${entity.priceUsd}", // Your custom rounding extension formats apply smoothly here
-                        marketCapUsd = entity.marketCapUsd.toString(),
+                        priceUsd = entity.priceUsd.formatToTwoDecimals(), // Your custom rounding extension formats apply smoothly here
+                        marketCapUsd = entity.marketCapUsd.formatToCap(),
                         priceChange24hText = entity.priceChange24hText,
                         isPricePositive = entity.isPricePositive == 1L
                     )
@@ -101,8 +103,8 @@ class CryptoRepositoryImpl(
                         id = entity.id,
                         symbol = entity.symbol,
                         name = entity.name,
-                        priceUsd = "$${entity.priceUsd}",
-                        marketCapUsd = entity.marketCapUsd.toString(),
+                        priceUsd = entity.priceUsd.formatToTwoDecimals(),
+                        marketCapUsd = entity.marketCapUsd.formatToCap(),
                         priceChange24hText = entity.priceChange24hText,
                         isPricePositive = entity.isPricePositive == 1L
                     )
