@@ -1,5 +1,6 @@
 package com.rshea.cryptotracker.data
 
+import com.rshea.cryptotracker.domain.CryptoApi
 import com.rshea.cryptotracker.domain.CryptoAssetDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -12,12 +13,12 @@ import io.ktor.client.request.parameter
  */
 class CryptoApiService(
     private val httpClient: HttpClient = CryptoNetworkClient.httpClient
-) {
+) : CryptoApi {
 
     // CoinGecko API base URL
     private val baseUrl = "https://api.coingecko.com/api/v3"
 
-    suspend fun fetchLiveMarketData(): List<CryptoAssetDto> {
+    override suspend fun fetchLiveMarketData(): List<CryptoAssetDto> {
         val response = httpClient.get("$baseUrl/coins/markets") {
             // Security & Format Headers
             header("x-cg-demo-api-key", CryptoNetworkClient.MY_API_KEY)

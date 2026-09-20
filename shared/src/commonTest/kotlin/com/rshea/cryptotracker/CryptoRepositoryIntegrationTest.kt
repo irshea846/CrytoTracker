@@ -74,8 +74,8 @@ class CryptoRepositoryIntegrationTest {
         val bitcoin = cryptoList.first()
         assertEquals("Bitcoin", bitcoin.name)
         assertEquals("BTC", bitcoin.symbol)
-        assertEquals("${'$'}62000.5", bitcoin.priceUsd)      // Asserts that your mapper extension formatting works!
-        assertEquals("1.2E12", bitcoin.marketCapUsd)    // Asserts that your shorthand currency calculation works!
+        assertEquals("${'$'}62000.50", bitcoin.priceUsd)      // Asserts that your mapper extension formatting works!
+        assertEquals("${'$'}1.20T", bitcoin.marketCapUsd)    // Asserts that your shorthand currency calculation works!
         assertEquals("2.45%", bitcoin.priceChange24hText)   // Asserts that your dynamic plus/minus string assignment works!
         assertTrue(bitcoin.isPricePositive, "Price trend direction flag must validate as true")
     }

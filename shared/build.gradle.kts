@@ -109,6 +109,8 @@ kotlin {
         val androidHostTest by getting {
             dependencies {
                 implementation(libs.sqldelight.sqlite.driver)
+                // Add this if the tab is missing during Android Host tests
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:${libs.versions.kotlinx.coroutines.get()}")
             }
         }
 
