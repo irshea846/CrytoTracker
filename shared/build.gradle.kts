@@ -82,6 +82,8 @@ kotlin {
             implementation(libs.sqldelight.android.driver) // Native Android SQLite handle
         }
         commonMain.dependencies {
+            // Exposes full websocket client streaming capabilities across all compilation targets
+            implementation(libs.ktor.client.websockets)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
