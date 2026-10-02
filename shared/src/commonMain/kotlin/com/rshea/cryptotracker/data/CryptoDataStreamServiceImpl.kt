@@ -26,40 +26,51 @@ class CryptoDataStreamServiceImpl(
     private var activeSession: DefaultClientWebSocketSession? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
+    private var isClosedManually = false // Tracks if the user intentionally triggered a disconnect
+
     override suspend fun openStreamChannel() {
         if (activeSession != null) return // Already connected, shield from double activation
-
+        isClosedManually = false
+        
         serviceScope.launch {
-            try {
-                // 2. Establish a permanent, persistent secure WebSocket transport tunnel to the gateway server
-                val session = httpClient.webSocketSession(
-                    method = io.ktor.http.HttpMethod.Get,
-                    host = "api.cryptotracker.io", // Target production gateway address placeholder
-                    path = "/v1/market-data/stream"
-                )
-                activeSession = session
+            var attempt = 0
+            val maxBaseDelayMs = 30000L // Cap the retry expansion wait loop at 30 seconds
 
-                // 3. Persistent reader loop: suspends until a new string frame arrives from the network
-                for (frame in session.incoming) {
-                    if (frame is Frame.Text) {
-                        val rawTextString = frame.readText()
+            // 1. Long-running structural reconnection lifecycle supervisor loop
+            while (!isClosedManually) {
+                try {
+                    attempt++
+                    println("📡 [WebSocket] Attempting connection channel initialization (Attempt #$attempt)...")
+                    // 2. Establish a permanent, persistent secure WebSocket transport tunnel to the gateway server
+                    val session = httpClient.webSocketSession(
+                        method = io.ktor.http.HttpMethod.Get,
+                        host = "api.cryptotracker.io", // Target production gateway address placeholder
+                        path = "/v1/market-data/stream"
+                    )
+                    activeSession = session
 
-                        // 1. Invoke your primitive parsing engine to map the string data
-                        val parsedDataPoint = CryptoStreamParser.parseTickerFrame(rawTextString)
+                    // 3. Persistent reader loop: suspends until a new string frame arrives from the network
+                    for (frame in session.incoming) {
+                        if (frame is Frame.Text) {
+                            val rawTextString = frame.readText()
 
-                        if (parsedDataPoint != null) {
-                            // 2. Emit the clean coordinate directly down your backpressure-protected shared flow!
-                            _priceUpdates.emit(parsedDataPoint)
+                            // 1. Invoke your primitive parsing engine to map the string data
+                            val parsedDataPoint = CryptoStreamParser.parseTickerFrame(rawTextString)
+
+                            if (parsedDataPoint != null) {
+                                // 2. Emit the clean coordinate directly down your backpressure-protected shared flow!
+                                _priceUpdates.emit(parsedDataPoint)
+                            }
                         }
                     }
+                } catch (e: Exception) {
+                    println("⚠️ [WebSocketStream] Channel execution encountered an exception: ${e.message}")
+                } finally {
+                    activeSession?.close()
+                    activeSession = null
                 }
-            } catch (e: Exception) {
-                println("⚠️ [WebSocketStream] Channel execution encountered an exception: ${e.message}")
-            } finally {
-                activeSession?.close()
-                activeSession = null
             }
-        }
+       }
     }
 
     override suspend fun closeStreamChannel() {
