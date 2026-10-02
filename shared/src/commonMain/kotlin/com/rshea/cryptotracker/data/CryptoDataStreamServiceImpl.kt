@@ -44,12 +44,13 @@ class CryptoDataStreamServiceImpl(
                     if (frame is Frame.Text) {
                         val rawTextString = frame.readText()
 
-                        // TEMPORARY TRACE LOG: Verifies network frames hit the data layer cleanly
-                        println("📡 [WebSocketStream] Received raw text frame: $rawTextString")
+                        // 1. Invoke your primitive parsing engine to map the string data
+                        val parsedDataPoint = CryptoStreamParser.parseTickerFrame(rawTextString)
 
-                        // NOTE: Tomorrow (Day 43), we will pass this string to our unboxed binary/JSON math parser!
-                        // For tonight, we emit a mock coordinate entry to prove the lifecycle tunnel is open.
-                        _priceUpdates.emit(DataPoint(x = 0f, y = 0f, "Raw Ticker Connected"))
+                        if (parsedDataPoint != null) {
+                            // 2. Emit the clean coordinate directly down your backpressure-protected shared flow!
+                            _priceUpdates.emit(parsedDataPoint)
+                        }
                     }
                 }
             } catch (e: Exception) {
