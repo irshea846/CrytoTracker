@@ -58,12 +58,6 @@ class CryptoRepositoryImpl(
         // Line 2: Creates a strict concurrency perimeter around data transactions
         return repositoryWriteMutex.withLock {
             println("🔒 [Worker $workerId] ENTERED critical section lock successfully!")
-            // 1. COLLAPSING LOGIC: Check if data was already fetched by another worker while waiting for the lock
-            val cachedBefore = queries.getAllCryptoAssets().executeAsList()
-            if (cachedBefore.isNotEmpty()) {
-                println("✨ [Repository] Found cached data! Skipping network fetch.")
-                return@withLock UIResourceState.Success(cachedBefore.toDomainModelListFromEntities())
-            }
 
             println("🚀 [Repository] Hitting network card...")
             try {
