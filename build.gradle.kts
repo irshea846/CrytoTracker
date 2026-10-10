@@ -8,4 +8,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.sqldelight) apply false
+
+    // ADD THESE TWO LINES TO RESOLVE THE CLASS LOAD EXCEPTION:
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.room) apply false
 }

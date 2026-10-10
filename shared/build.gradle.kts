@@ -9,6 +9,10 @@ plugins {
     alias(libs.plugins.buildconfig)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.sqldelight) // ◄── Triggers the code-generation engine
+    // TEMPORARY SEPARATION: Hold off on applying plugins here to prevent classloader collisions with SQLDelight
+    // alias(libs.plugins.ksp)
+    // alias(libs.plugins.room)
+
 }
 
 val envProperties = Properties().apply {
@@ -22,6 +26,15 @@ buildConfig {
     packageName("com.rshea.cryptotracker")
     buildConfigField("MY_API_KEY", envProperties.getProperty("MY_API_KEY") ?: "")
 }
+
+// ◄── COMMENT OUT THESE CONFIGURATION BLOCKS TEMPORARILY:
+// room {
+//     schemaDirectory("$projectDir/schemas")
+// }
+
+// ksp {
+//     arg("room.generateKotlin", "true")
+// }
 
 // Configure the database schema package mapping
 sqldelight {
@@ -99,6 +112,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutine) // For streaming DB entries as Flow
+
+            // ADD THESE TWO CORE RUNTIME LIBRARIES INTO COMMONMAIN:
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -144,6 +161,14 @@ kotlin {
     }
 }
 
+// ADD THIS MULTIPLATFORM SYMBOL PROCESSOR BLOCK:
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+
+    // TEMPORARY SEPARATION: Comment out the KSP processing blocks until SQLDelight is stripped out next week
+    // add("kspCommonMainMetadata", libs.androidx.room.compiler)
+    // add("kspAndroid", libs.androidx.room.compiler)
+    // add("kspIosX64", libs.androidx.room.compiler)
+    // add("kspIosArm64", libs.androidx.room.compiler)
+    // add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
