@@ -6,10 +6,14 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+    // FIX: Remove the hardcoded version assignment to prevent catalog mismatches!
+    plugins {
+        id("com.google.devtools.ksp")
+    }
+
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS) // Enforces centralized repo control
     repositories {
         google()
         mavenCentral()
