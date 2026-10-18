@@ -3,14 +3,12 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
+    id("com.android.library")
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.buildconfig)
     alias(libs.plugins.kotlin.serialization)
-
-    // 1. Leave SQLDelight fully commented out
-    // alias(libs.plugins.sqldelight)
+    alias(libs.plugins.sqldelight)
 
     // 2. Keep modern KSP and Room plugins active at the module layer
     alias(libs.plugins.ksp)
@@ -29,17 +27,31 @@ buildConfig {
     buildConfigField("MY_API_KEY", envProperties.getProperty("MY_API_KEY") ?: "")
 }
 
-// 3. Keep schema diagnostics blocks fully commented out for now
-// room {
-//     schemaDirectory("$projectDir/schemas")
-// }
+room {
+    schemaDirectory("$projectDir/schemas")
+}
 
-// ksp {
-//     arg("room.generateKotlin", "true")
-// }
+sqldelight {
+    databases {
+        create("CryptoDatabase") {
+            packageName.set("com.rshea.cryptotracker.database")
+        }
+    }
+}
 
-// 4. REMOVE THE ENTIRE SQLDELIGHT CONFIGURATION BLOCK COMPLETELY:
-// Leaving this un-commented without the plugin active causes immediate build crashes!
+configure<com.android.build.api.dsl.LibraryExtension> {
+    namespace = "com.rshea.cryptotracker.shared"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    defaultConfig {
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
 
 kotlin {
     compilerOptions {
@@ -58,25 +70,10 @@ kotlin {
         }
     }
 
-    android {
-        namespace = "com.rshea.cryptotracker.shared"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
-
+    androidTarget {
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_11
+            jvmTarget.set(JvmTarget.JVM_11)
             freeCompilerArgs.add("-Xexpect-actual-classes")
-        }
-        androidResources {
-            enable = true
-        }
-        withHostTest {
-            isIncludeAndroidResources = true
-        }
-        withDeviceTestBuilder {
-            sourceSetTreeName = "test"
-        }.configure {
-            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
     }
 
@@ -87,9 +84,7 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.activity.compose)
-
-            // REMOVE OLD DRIVER REFERENCE:
-            // implementation(libs.sqldelight.android.driver)
+            implementation(libs.sqldelight.android.driver)
         }
         commonMain.dependencies {
             implementation(libs.ktor.client.websockets)
@@ -102,14 +97,12 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
 
-            // REMOVE OLD DESCRIPTORS REFERENCE:
-            // implementation(libs.sqldelight.runtime)
-            // implementation(libs.sqldelight.coroutine)
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutine)
 
             // Leave your multiplatform Room runtime libraries active
             implementation(libs.androidx.room.runtime)
@@ -122,18 +115,18 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
-        val androidHostTest by getting {
+        val androidUnitTest by getting {
+            kotlin.srcDir("src/androidHostTest/kotlin")
             dependencies {
-                // REMOVE INCOMPATIBLE TEST DRIVER:
-                // implementation(libs.sqldelight.sqlite.driver)
+                implementation(libs.sqldelight.sqlite.driver)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:${libs.versions.kotlinx.coroutines.get()}")
             }
         }
 
-        val androidDeviceTest by getting {
+        val androidInstrumentedTest by getting {
+            kotlin.srcDir("src/androidDeviceTest/kotlin")
             dependencies {
-                // REMOVE INCOMPATIBLE DEVICE DRIVER:
-                // implementation(libs.sqldelight.android.driver)
+                implementation(libs.sqldelight.android.driver)
                 implementation(libs.androidx.testExt.junit)
             }
         }
@@ -144,9 +137,7 @@ kotlin {
             dependsOn(sourceSets.getByName("commonMain"))
             dependencies {
                 implementation(libs.ktor.client.darwin)
-
-                // REMOVE INCOMPATIBLE DRIVER:
-                // implementation(libs.sqldelight.native.driver)
+                implementation(libs.sqldelight.native.driver)
             }
         }
 
@@ -164,11 +155,5 @@ kotlin {
 // 5. UNCOMMENT AND ACTIVATE THE DEPENDENCY CODE-GENERATION LOOPS AT THE BOTTOM:
 // This handles injection via standard string tags, completely bypassing the unresolved ksp() method issue!
 dependencies {
-    androidRuntimeClasspath(libs.compose.uiTooling)
-
-    add("kspCommonMainMetadata", libs.androidx.room.compiler)
-    add("kspAndroid", libs.androidx.room.compiler)
-    add("kspIosX64", libs.androidx.room.compiler)
-    add("kspIosArm64", libs.androidx.room.compiler)
-    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+    add("ksp", libs.androidx.room.compiler)
 }
