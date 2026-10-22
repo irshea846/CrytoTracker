@@ -17,11 +17,12 @@ interface CryptoAssetDao {
     @Query("SELECT * FROM room_crypto_assets WHERE id = :id LIMIT 1")
     suspend fun getCryptoAssetById(id: String): CryptoAssetRoomEntity?
 
-    // Upserts network packets natively, replacing stale lines on ID conflict matching
+    // FIX: Change return type from LongArray to List<Long>
+    // This provides full cross-platform collection type safety inside commonMain metadata targets
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCryptoAssets(assets: List<CryptoAssetRoomEntity>)
+    suspend fun insertCryptoAssets(assets: List<CryptoAssetRoomEntity>): List<Long>
 
-    // Flushes out storage rows cleanly during clear cache/refresh passes
+    // FIX: For database cleanup routines, force the query to return an Int representing the count of rows wiped
     @Query("DELETE FROM room_crypto_assets")
-    suspend fun deleteAllCryptoAssets()
+    suspend fun deleteAllCryptoAssets(): Int
 }
