@@ -4,6 +4,7 @@ import androidx.compose.ui.window.ComposeUIViewController
 import com.rshea.cryptotracker.data.CryptoApiService
 import com.rshea.cryptotracker.data.CryptoRepositoryImpl
 import com.rshea.cryptotracker.database.DatabaseDriverFactory // ◄── Your clean iOS interface driver
+import com.rshea.cryptotracker.database.DatabaseModule
 import com.rshea.cryptotracker.presentation.App
 import com.rshea.cryptotracker.presentation.CryptoListViewModel
 import platform.UIKit.UIViewController
@@ -17,10 +18,9 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
     val apiService = CryptoApiService()
 
     // 3. Inject BOTH components directly into your cross-platform repository constructor!
-    val repository = CryptoRepositoryImpl(
-        iosDriverFactory.createDriver(),
-        apiService
-    )
+    val databaseModule = DatabaseModule() // iOS needs zero context parameters
+    val cryptoAssetDao = databaseModule.provideCryptoAssetDao()
+    val repository = CryptoRepositoryImpl(cryptoAssetDao, apiService)
 
     // 4. Pass your wired data tier up into your architecture ViewModel orchestrator
     val cryptoViewModel = CryptoListViewModel(repository = repository)
