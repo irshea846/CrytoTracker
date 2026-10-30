@@ -8,7 +8,6 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.buildconfig)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.sqldelight)
 
     // 2. Keep modern KSP and Room plugins active at the module layer
     alias(libs.plugins.ksp)
@@ -29,14 +28,6 @@ buildConfig {
 
 room {
     schemaDirectory("$projectDir/schemas")
-}
-
-sqldelight {
-    databases {
-        create("CryptoDatabase") {
-            packageName.set("com.rshea.cryptotracker.database")
-        }
-    }
 }
 
 configure<com.android.build.api.dsl.LibraryExtension> {
@@ -84,7 +75,6 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.activity.compose)
-            implementation(libs.sqldelight.android.driver)
         }
         commonMain.dependencies {
             implementation(libs.ktor.client.websockets)
@@ -101,9 +91,6 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
 
-            implementation(libs.sqldelight.runtime)
-            implementation(libs.sqldelight.coroutine)
-
             // Leave your multiplatform Room runtime libraries active
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
@@ -118,7 +105,6 @@ kotlin {
         val androidUnitTest by getting {
             kotlin.srcDir("src/androidHostTest/kotlin")
             dependencies {
-                implementation(libs.sqldelight.sqlite.driver)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:${libs.versions.kotlinx.coroutines.get()}")
             }
         }
@@ -126,7 +112,6 @@ kotlin {
         val androidInstrumentedTest by getting {
             kotlin.srcDir("src/androidDeviceTest/kotlin")
             dependencies {
-                implementation(libs.sqldelight.android.driver)
                 implementation(libs.androidx.testExt.junit)
             }
         }
@@ -137,7 +122,6 @@ kotlin {
             dependsOn(sourceSets.getByName("commonMain"))
             dependencies {
                 implementation(libs.ktor.client.darwin)
-                implementation(libs.sqldelight.native.driver)
             }
         }
 

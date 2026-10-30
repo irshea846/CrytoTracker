@@ -1,6 +1,6 @@
 package com.rshea.cryptotracker.data
 
-import com.rshea.cryptotracker.database.CryptoAssetEntity
+import com.rshea.cryptotracker.database.CryptoAssetRoomEntity
 import com.rshea.cryptotracker.domain.CryptoAssetDto
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.util.formatToCap
@@ -49,15 +49,15 @@ fun CryptoAssetDto.toDomainModel(): CryptoAsset {
  * Extension mapper to translate local SQLite Database Entities
  * into stable, pre-formatted Domain Models for UI consumption.
  */
-fun CryptoAssetEntity.toDomainModel(): CryptoAsset {
+fun CryptoAssetRoomEntity.toDomainModel(): CryptoAsset {
     return CryptoAsset(
         id = this.id,
         symbol = this.symbol,
         name = this.name,
         priceUsd = "$${this.priceUsd.formatToTwoDecimals()}",
         marketCapUsd = this.marketCapUsd.formatToCap(),
-        priceChange24hText = this.priceChange24hText,
-        isPricePositive = this.isPricePositive == 1L
+        priceChange24hText = this.changePercent24Hr.toString(),
+        isPricePositive = this.changePercent24Hr >= 0.0
     )
 }
 
@@ -71,6 +71,6 @@ fun List<CryptoAssetDto>.toDomainModelList(): List<CryptoAsset> {
 /**
  * Helper collection mapper to transform lists of database entities in a single pass.
  */
-fun List<CryptoAssetEntity>.toDomainModelListFromEntities(): List<CryptoAsset> {
+fun List<CryptoAssetRoomEntity>.toDomainModelListFromEntities(): List<CryptoAsset> {
     return this.map { it.toDomainModel() }
 }
