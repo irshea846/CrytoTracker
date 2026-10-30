@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rshea.cryptotracker.data.CryptoApiService
 import com.rshea.cryptotracker.data.CryptoRepositoryImpl
-import com.rshea.cryptotracker.database.DatabaseDriverFactory
 import com.rshea.cryptotracker.database.DatabaseModule
 import com.rshea.cryptotracker.presentation.App
 import com.rshea.cryptotracker.presentation.CryptoListViewModel
