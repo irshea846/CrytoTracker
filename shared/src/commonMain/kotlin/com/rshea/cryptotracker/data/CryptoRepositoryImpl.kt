@@ -8,6 +8,7 @@ import com.rshea.cryptotracker.domain.CryptoRepository
 import com.rshea.cryptotracker.domain.UIResourceState
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -69,14 +70,18 @@ class CryptoRepositoryImpl(
                 UIResourceState.Success(roomEntities.toCryptoAssetList())
 
             } catch (e: Exception) {
-                // 6. LOCAL OFFLINE FALLBACK: If network drops a packet, instantly query Room disk snapshots!
+                // 6. FALLBACK PROTECTION: If the server is unreachable or network drops a packet,
+                // instantly query Room disk snapshots!
                 // To fetch a flat, synchronous data lookup pass, we query your DAO context
-                val localEntities = cryptoAssetDao.getAllCryptoAssetsFlow() // Accessing our database layer
-
                 println("❌ [Worker $workerId] hit network error: ${e.message}. Attempting Room offline fallback lookup...")
 
-                // For immediate offline data extraction passes during network drops:
-                UIResourceState.Error("Network failure. Database pipeline synchronized successfully: ${e.message}")
+                val cachedRows = cryptoAssetDao.getAllCryptoAssetsFlow().first()
+                if (cachedRows.isNotEmpty()) {
+                    println("⚠️ [Repository] Network broken, returning ${cachedRows.size} cached Room assets.")
+                    UIResourceState.Success(cachedRows.toCryptoAssetList())
+                } else {
+                    UIResourceState.Error("Network failure and no local persistent cache records located in Room: ${e.message}")
+                }
             }
         }
     }
