@@ -41,7 +41,10 @@ fun CryptoAssetDto.toDomainModel(): CryptoAsset {
         priceUsd = formattedPrice,
         marketCapUsd = formattedCap,
         priceChange24hText = formattedPercentage,
-        isPricePositive = isPositive
+        isPricePositive = isPositive,
+        volumeUsd24Hr = this.volumeUsd24Hr.toString(),
+        totalCirculatingSupply = this.totalCirculatingSupply.toString(),
+        priceChangeAbsoluteText = this.priceChangeAbsolute.toString()
     )
 }
 
@@ -57,7 +60,10 @@ fun CryptoAssetRoomEntity.toDomainModel(): CryptoAsset {
         priceUsd = "$${this.priceUsd.formatToTwoDecimals()}",
         marketCapUsd = this.marketCapUsd.formatToCap(),
         priceChange24hText = this.changePercent24Hr.toString(),
-        isPricePositive = this.changePercent24Hr >= 0.0
+        isPricePositive = this.changePercent24Hr >= 0.0,
+        volumeUsd24Hr = this.volumeUsd24Hr.toString(),
+        totalCirculatingSupply = this.totalCirculatingSupply.toString(),
+        priceChangeAbsoluteText = this.priceChangeAbsolute.toString()
     )
 }
 

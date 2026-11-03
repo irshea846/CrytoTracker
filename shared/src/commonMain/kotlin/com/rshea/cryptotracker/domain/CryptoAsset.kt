@@ -11,5 +11,11 @@ data class CryptoAsset(
     val priceUsd: String,          // Pre-formatted currency display (e.g., "$63,500.50")
     val marketCapUsd: String,      // Pre-formatted capitalization display (e.g., "$1.27T")
     val priceChange24hText: String, // Pre-formatted percentage display (e.g., "+1.25%")
-    val isPricePositive: Boolean    // Flag to let Compose choose text color (Green vs Red)
+    val isPricePositive: Boolean,    // Flag to let Compose choose text color (Green vs Red)
+
+    // === WEEK 13 DISPLAY EXPANSIONS FOR ADVANCED UI SPARK LINES ===
+    val volumeUsd24Hr: String,
+    val totalCirculatingSupply: String,
+    val priceChangeAbsoluteText: String
+
 )

@@ -58,7 +58,10 @@ class CryptoRepositoryImpl(
                         changePercent24Hr = dto.price_change_percentage_24h,
                         supply = 0.0, // Default value matching your baseline specification
                         maxSupply = null, // Nullable parameter mapped seamlessly inside your Room configuration
-                        lastUpdatedTimestamp = Clock.System.now().toEpochMilliseconds() // Captures synchronization moment natively!
+                        lastUpdatedTimestamp = Clock.System.now().toEpochMilliseconds(), // Captures synchronization moment natively!
+                        volumeUsd24Hr = dto.volumeUsd24Hr,
+                        totalCirculatingSupply = dto.totalCirculatingSupply,
+                        priceChangeAbsolute = dto.priceChangeAbsolute
                     )
                 }
 

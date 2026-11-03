@@ -12,5 +12,9 @@ data class CryptoAssetDto(
     val name: String,
     val current_price: Double,
     val market_cap: Double,
-    val price_change_percentage_24h: Double
+    val price_change_percentage_24h: Double,
+    val volumeUsd24Hr: Double = 0.0,
+    val totalCirculatingSupply: Double = 0.0,
+    val priceChangeAbsolute: Double = 0.0
+
 )

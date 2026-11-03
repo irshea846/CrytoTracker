@@ -15,7 +15,13 @@ fun CryptoAssetRoomEntity.toCryptoAsset(): CryptoAsset {
         // FIX: Derive the required text field from the raw 24hr percentage change primitive
         priceChange24hText = "${if (this.changePercent24Hr >= 0) "+" else ""}${((this.changePercent24Hr * 100).roundToInt() / 100.0)}%",
         // FIX: Evaluate the raw numeric change state into a clear business Boolean indicator
-        isPricePositive = this.changePercent24Hr >= 0.0
+        isPricePositive = this.changePercent24Hr >= 0.0,
+
+        // === WEEK 13 DISPLAY FORMATTING TRANSLATIONS === //
+        volumeUsd24Hr = this.volumeUsd24Hr.toString(),
+        totalCirculatingSupply = this.totalCirculatingSupply.toString(),
+        priceChangeAbsoluteText = "${if (this.priceChangeAbsolute >= 0) "+" else ""}${this.priceChangeAbsolute}"
+
     )
 }
 
