@@ -15,5 +15,11 @@ data class CryptoAssetRoomEntity(
     val changePercent24Hr: Double,
     val supply: Double,
     val maxSupply: Double?, // Nullable mapping for uncapped assets
-    val lastUpdatedTimestamp: Long // Crucial for tracking offline sync offsets
+    val lastUpdatedTimestamp: Long, // Crucial for tracking offline sync offsets
+
+    // === WEEK 13 SCHEMA EXPANSION EXTENSIONS FOR ADVANCED UI SPARK LINES ===
+    val volumeUsd24Hr: Double,
+    val totalCirculatingSupply: Double,
+    val priceChangeAbsolute: Double
+
 )

@@ -12,6 +12,7 @@ expect class DatabaseBuilderFactory {
 fun createRoomDatabase(factory: DatabaseBuilderFactory): AppDatabase {
     return factory.createBuilder()
         .setDriver(BundledSQLiteDriver()) // Enforces consistent SQLite behavior across iOS & Android
+        .fallbackToDestructiveMigration(dropAllTables = true) // ◄── ADD THIS SAFEHOUSE GUARD TO FIX CRASHES
         .build()
     // Make sure to double-check the physical labels when wiring up future schema migration passes!
 }
