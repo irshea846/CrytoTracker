@@ -7,8 +7,11 @@ import androidx.room.ConstructedBy
 import androidx.room.RoomDatabaseConstructor
 
 @Database(
-    entities = [CryptoAssetRoomEntity::class],
-    version = 2,
+    entities = [
+        CryptoAssetRoomEntity::class,
+        CryptoHistoryRoomEntity::class // ◄── ADD THIS RELATIONAL ENTITY LINK LINE
+    ],
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class)
