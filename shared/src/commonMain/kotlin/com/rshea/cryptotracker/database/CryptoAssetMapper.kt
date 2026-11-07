@@ -2,6 +2,8 @@ package com.rshea.cryptotracker.database
 
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.DataPoint
+import com.rshea.cryptotracker.util.formatToCap
+import com.rshea.cryptotracker.util.formatToTwoDecimals
 import kotlin.math.roundToInt
 
 // Translates a Room database storage row into your exact UI display domain model
@@ -68,3 +70,30 @@ fun List<CryptoAssetWithHistory>.toCryptoAssetWithChartList(): List<CryptoAsset>
     return this.map { it.toCryptoAssetWithChart() }
 }
 
+/**
+ * Translates a composite Room relational join model package into a fully formatted,
+ * presentation-ready Domain model, mapping historical ticks cleanly.
+ */
+fun CryptoAssetWithHistory.toDomainModelWithChart(): CryptoAsset {
+    return CryptoAsset(
+        id = this.asset.id,
+        name = this.asset.name,
+        symbol = this.asset.symbol.uppercase(),
+        priceUsd = "$${this.asset.priceUsd.formatToTwoDecimals()}",
+        marketCapUsd = this.asset.marketCapUsd.formatToCap(),
+        priceChange24hText = this.asset.changePercent24Hr.toString(),
+        isPricePositive = this.asset.changePercent24Hr >= 0.0,
+        volumeUsd24Hr = this.asset.volumeUsd24Hr.toString(),
+        totalCirculatingSupply = this.asset.totalCirculatingSupply.toString(),
+        priceChangeAbsoluteText = this.asset.priceChangeAbsolute.toString()
+        // Note: If you add `val sparklineData: List<DataPoint>` to CryptoAsset later,
+        // map it here: sparklineData = this.history.map { DataPoint(it.timestamp.toFloat(), it.priceUsd.toFloat(), "") }
+    )
+}
+
+/**
+ * Transforms collections of relational database models in a single pass.
+ */
+fun List<CryptoAssetWithHistory>.toDomainModelWithChartList(): List<CryptoAsset> {
+    return this.map { it.toDomainModelWithChart() }
+}

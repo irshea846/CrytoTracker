@@ -3,6 +3,7 @@ package com.rshea.cryptotracker.data
 import com.rshea.cryptotracker.database.CryptoAssetDao
 import com.rshea.cryptotracker.database.CryptoAssetRoomEntity
 import com.rshea.cryptotracker.database.toCryptoAssetList
+import com.rshea.cryptotracker.database.toCryptoAssetWithChartList
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.CryptoRepository
 import com.rshea.cryptotracker.domain.UIResourceState
@@ -26,8 +27,8 @@ class CryptoRepositoryImpl(
     private val repositoryWriteMutex = Mutex()
 
     override fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>> {
-        return cryptoAssetDao.getAllCryptoAssetsFlow().map { entityList ->
-            entityList.toCryptoAssetList()
+        return cryptoAssetDao.getCryptoAssetsWithHistoryFlow().map { relationalList ->
+            relationalList.toCryptoAssetWithChartList()
         }
     }
 
