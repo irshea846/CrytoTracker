@@ -4,6 +4,8 @@ import com.rshea.cryptotracker.database.CryptoAssetDao
 import com.rshea.cryptotracker.database.CryptoAssetRoomEntity
 import com.rshea.cryptotracker.database.toCryptoAssetList
 import com.rshea.cryptotracker.database.toCryptoAssetWithChartList
+import com.rshea.cryptotracker.database.toDomainModelWithChartList
+import com.rshea.cryptotracker.database.toDomainModelWithChartListFromEntities
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.CryptoRepository
 import com.rshea.cryptotracker.domain.UIResourceState
@@ -25,10 +27,11 @@ class CryptoRepositoryImpl(
 ) : CryptoRepository {
 
     private val repositoryWriteMutex = Mutex()
+    private val CACHE_TTL_MILLIS = 60_000L // Enforce a strict 60-second structural time limit
 
     override fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>> {
         return cryptoAssetDao.getCryptoAssetsWithHistoryFlow().map { relationalList ->
-            relationalList.toCryptoAssetWithChartList()
+            relationalList.toDomainModelWithChartList()
         }
     }
 
@@ -42,7 +45,25 @@ class CryptoRepositoryImpl(
             println("🚀 [Repository] Hitting network card...")
 
             try {
-                // 2. Fetch fresh live market payload from the remote Ktor networking service
+                // 1. FAST-PATH PERSISTENCE CHECK: Pull the primary current cache records out of Room
+                val currentCachedEntities = cryptoAssetDao.getAllCryptoAssetsFlow().first()
+                val currentTimestamp = Clock.System.now().toEpochMilliseconds()
+
+                // 2. CHECK CACHE FRESHNESS INVARIANT
+                if (currentCachedEntities.isNotEmpty()) {
+                    // Sample the timestamp from the first record in our sorted collection
+                    val lastSyncTime = currentCachedEntities.first().lastUpdatedTimestamp
+                    val cacheAge = currentTimestamp - lastSyncTime
+
+                    if (cacheAge < CACHE_TTL_MILLIS) {
+                        println("⏰ [Repository] Cache is fresh (Age: ${cacheAge}ms < ${CACHE_TTL_MILLIS}ms). Bypassing Ktor network sweep!")
+                        // Convert entities safely to your domain presentation list and short-circuit
+                        return@withLock UIResourceState.Success(currentCachedEntities.toDomainModelWithChartListFromEntities())
+                    }
+                }
+
+                // 3. STALE OR VOID CACHE PATH: Execute remote server fetch block
+                println("🚀 [Repository] Cache expired or empty. Hitting network card...")
                 val rawDtos = apiService.fetchLiveMarketData()
                 println("✅ [Worker $workerId] finished transaction and is releasing lock.")
 
@@ -71,7 +92,7 @@ class CryptoRepositoryImpl(
 
                 // 5. SINGLE SOURCE OF TRUTH: Read storage data back directly using our local mappers
                 // (Note: Since our UI layer already observes observeCryptoAssetsStream(), this instantly forces screen redraws!)
-                UIResourceState.Success(roomEntities.toCryptoAssetList())
+                UIResourceState.Success(roomEntities.toDomainModelWithChartListFromEntities())
 
             } catch (e: Exception) {
                 // 6. FALLBACK PROTECTION: If the server is unreachable or network drops a packet,
