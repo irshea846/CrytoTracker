@@ -91,6 +91,24 @@ fun CryptoAssetWithHistory.toDomainModelWithChart(): CryptoAsset {
     )
 }
 
+// Transforms flat collection array primitives without relational joins for fast cache returns
+fun List<CryptoAssetRoomEntity>.toDomainModelWithChartListFromEntities(): List<CryptoAsset> {
+    return this.map { entity ->
+        CryptoAsset(
+            id = entity.id,
+            name = entity.name,
+            symbol = entity.symbol.uppercase(),
+            priceUsd = "$${entity.priceUsd.formatToTwoDecimals()}",
+            marketCapUsd = entity.marketCapUsd.formatToCap(),
+            priceChange24hText = entity.changePercent24Hr.toString(),
+            isPricePositive = entity.changePercent24Hr >= 0.0,
+            volumeUsd24Hr = entity.volumeUsd24Hr.toString(),
+            totalCirculatingSupply = entity.totalCirculatingSupply.toString(),
+            priceChangeAbsoluteText = entity.priceChangeAbsolute.toString()
+        )
+    }
+}
+
 /**
  * Transforms collections of relational database models in a single pass.
  */
