@@ -2,6 +2,7 @@ package com.rshea.cryptotracker.data
 
 import com.rshea.cryptotracker.database.CryptoAssetDao
 import com.rshea.cryptotracker.database.CryptoAssetRoomEntity
+import com.rshea.cryptotracker.database.CryptoHistoryRoomEntity
 import com.rshea.cryptotracker.database.toCryptoAssetList
 import com.rshea.cryptotracker.database.toCryptoAssetWithChartList
 import com.rshea.cryptotracker.database.toDomainModelWithChartList
@@ -48,6 +49,7 @@ class CryptoRepositoryImpl(
                 // 1. FAST-PATH PERSISTENCE CHECK: Pull the primary current cache records out of Room
                 val currentCachedEntities = cryptoAssetDao.getAllCryptoAssetsFlow().first()
                 val currentTimestamp = Clock.System.now().toEpochMilliseconds()
+                val rolling24HourThreshold = currentTimestamp - 86_400_000L // Compute the 24-hour cutoff barrier
 
                 // 2. CHECK CACHE FRESHNESS INVARIANT
                 if (currentCachedEntities.isNotEmpty()) {
@@ -90,7 +92,19 @@ class CryptoRepositoryImpl(
                 // 4. ATOMIC DATABASE UPDATE PASS: Room natively runs bulk inserts using OnConflictStrategy.REPLACE
                 cryptoAssetDao.insertCryptoAssets(roomEntities)
 
-                // 5. SINGLE SOURCE OF TRUTH: Read storage data back directly using our local mappers
+                // 5. Generate and pass down matching child history rows if your network payload contains history arrays
+                val historyPoints = rawDtos.map { dto ->
+                    CryptoHistoryRoomEntity(
+                        assetId = dto.id,
+                        timestamp = currentTimestamp,
+                        priceUsd = dto.current_price
+                    )
+                }
+
+                // 6. Fire the atomic transactional gateway, capturing the returned eviction count safely
+                val totalEvictedRows = cryptoAssetDao.insertAndPruneHistory(historyPoints, rolling24HourThreshold)
+
+                // 7. SINGLE SOURCE OF TRUTH: Read storage data back directly using our local mappers
                 // (Note: Since our UI layer already observes observeCryptoAssetsStream(), this instantly forces screen redraws!)
                 UIResourceState.Success(roomEntities.toDomainModelWithChartListFromEntities())
 

@@ -36,4 +36,23 @@ interface CryptoAssetDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCryptoHistory(history: List<CryptoHistoryRoomEntity>): List<Long>
 
+    // === WEEK 14 AUTOMATED ROLLING WINDOW ROBUST STORAGE PRUNING ===
+
+    @Query("DELETE FROM room_crypto_history WHERE timestamp < :thresholdTimestamp")
+    suspend fun pruneHistoryOlderThan(thresholdTimestamp: Long): Int
+
+    /**
+     * Production-Grade transactional pipeline: Inserts incoming historical price logs
+     * and instantly runs a clean sweep to evict trend items older than the calculated threshold time.
+     * FIX: Return Int instead of Unit to bypass the KSP2 'unexpected jvm signature V' compiler bug.
+     */
+    @Transaction
+    suspend fun insertAndPruneHistory(history: List<CryptoHistoryRoomEntity>, thresholdTimestamp: Long): Int {
+        insertCryptoHistory(history)
+        val rowsWiped = pruneHistoryOlderThan(thresholdTimestamp)
+        if (rowsWiped > 0) {
+            println("🧹 [Room SQLite] Automated Pruning Sweeper completed. Cleared $rowsWiped historical data points older than 24h.")
+        }
+        return rowsWiped // ◄── RETURN THE INT WORKSPACE TOKEN DIRECTLY
+    }
 }
