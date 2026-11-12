@@ -6,7 +6,6 @@ import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.util.formatToCap
 import com.rshea.cryptotracker.util.formatToTwoDecimals
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 /**
  * Extension mapper to translate raw, volatile API Data Transfer Objects
@@ -44,7 +43,8 @@ fun CryptoAssetDto.toDomainModel(): CryptoAsset {
         isPricePositive = isPositive,
         volumeUsd24Hr = this.volumeUsd24Hr.toString(),
         totalCirculatingSupply = this.totalCirculatingSupply.toString(),
-        priceChangeAbsoluteText = this.priceChangeAbsolute.toString()
+        priceChangeAbsoluteText = this.priceChangeAbsolute.toString(),
+        sparklineData = emptyList()
     )
 }
 
@@ -55,15 +55,15 @@ fun CryptoAssetDto.toDomainModel(): CryptoAsset {
 fun CryptoAssetRoomEntity.toDomainModel(): CryptoAsset {
     return CryptoAsset(
         id = this.id,
-        symbol = this.symbol,
         name = this.name,
+        symbol = this.symbol,
         priceUsd = "$${this.priceUsd.formatToTwoDecimals()}",
         marketCapUsd = this.marketCapUsd.formatToCap(),
         priceChange24hText = this.changePercent24Hr.toString(),
         isPricePositive = this.changePercent24Hr >= 0.0,
         volumeUsd24Hr = this.volumeUsd24Hr.toString(),
         totalCirculatingSupply = this.totalCirculatingSupply.toString(),
-        priceChangeAbsoluteText = this.priceChangeAbsolute.toString()
+        priceChangeAbsoluteText = this.priceChangeAbsolute.toString(),
     )
 }
 

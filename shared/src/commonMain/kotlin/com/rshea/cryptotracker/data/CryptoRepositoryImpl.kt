@@ -57,10 +57,12 @@ class CryptoRepositoryImpl(
                     val lastSyncTime = currentCachedEntities.first().lastUpdatedTimestamp
                     val cacheAge = currentTimestamp - lastSyncTime
 
+                    val currentRelationalCache = cryptoAssetDao.getCryptoAssetsWithHistoryFlow().first()
                     if (cacheAge < CACHE_TTL_MILLIS) {
                         println("⏰ [Repository] Cache is fresh (Age: ${cacheAge}ms < ${CACHE_TTL_MILLIS}ms). Bypassing Ktor network sweep!")
                         // Convert entities safely to your domain presentation list and short-circuit
-                        return@withLock UIResourceState.Success(currentCachedEntities.toDomainModelWithChartListFromEntities())
+                        return@withLock UIResourceState.Success(currentRelationalCache.toDomainModelWithChartList())
+                        //return@withLock UIResourceState.Success(currentCachedEntities.toDomainModelWithChartListFromEntities())
                     }
                 }
 
@@ -85,7 +87,7 @@ class CryptoRepositoryImpl(
                         lastUpdatedTimestamp = Clock.System.now().toEpochMilliseconds(), // Captures synchronization moment natively!
                         volumeUsd24Hr = dto.volumeUsd24Hr,
                         totalCirculatingSupply = dto.totalCirculatingSupply,
-                        priceChangeAbsolute = dto.priceChangeAbsolute
+                        priceChangeAbsolute = dto.priceChangeAbsolute,
                     )
                 }
 
@@ -106,7 +108,9 @@ class CryptoRepositoryImpl(
 
                 // 7. SINGLE SOURCE OF TRUTH: Read storage data back directly using our local mappers
                 // (Note: Since our UI layer already observes observeCryptoAssetsStream(), this instantly forces screen redraws!)
-                UIResourceState.Success(roomEntities.toDomainModelWithChartListFromEntities())
+                val updatedRelationalRows = cryptoAssetDao.getCryptoAssetsWithHistoryFlow().first()
+                UIResourceState.Success(updatedRelationalRows.toDomainModelWithChartList())
+                //UIResourceState.Success(roomEntities.toDomainModelWithChartListFromEntities())
 
             } catch (e: Exception) {
                 // 6. FALLBACK PROTECTION: If the server is unreachable or network drops a packet,
