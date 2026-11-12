@@ -16,6 +16,7 @@ data class CryptoAsset(
     // === WEEK 13 DISPLAY EXPANSIONS FOR ADVANCED UI SPARK LINES ===
     val volumeUsd24Hr: String,
     val totalCirculatingSupply: String,
-    val priceChangeAbsoluteText: String
+    val priceChangeAbsoluteText: String,
+    val sparklineData: List<Double> = emptyList(), // Holds chronological chart prices
 
 )

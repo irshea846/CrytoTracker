@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.UIResourceState
+import com.rshea.cryptotracker.presentation.components.AssetSparklineChart
 
 @Composable
 fun App(
@@ -141,6 +142,16 @@ fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
                                 color = MaterialTheme.colorScheme.outline
                             )
                         }
+
+                        // NEW: Hardware-accelerated Canvas Sparkline
+                        AssetSparklineChart(
+                            pricePoints = crypto.sparklineData, // Match your CryptoAsset list property name
+                            isPositiveTrend = crypto.isPricePositive,
+                            modifier = Modifier
+                                .width(84.dp)
+                                .height(36.dp)
+                        )
+
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
                                 text = crypto.priceUsd,

@@ -10,8 +10,8 @@ import kotlin.math.roundToInt
 fun CryptoAssetRoomEntity.toCryptoAsset(): CryptoAsset {
     return CryptoAsset(
         id = this.id,
-        symbol = this.symbol,
         name = this.name,
+        symbol = this.symbol,
         // FIX: Convert Double storage primitives into the Strings expected by the Domain constructor
         priceUsd = this.priceUsd.toString(),
         marketCapUsd = this.marketCapUsd.toString(),
@@ -23,9 +23,9 @@ fun CryptoAssetRoomEntity.toCryptoAsset(): CryptoAsset {
         // === WEEK 13 DISPLAY FORMATTING TRANSLATIONS === //
         volumeUsd24Hr = this.volumeUsd24Hr.toString(),
         totalCirculatingSupply = this.totalCirculatingSupply.toString(),
-        priceChangeAbsoluteText = "${if (this.priceChangeAbsolute >= 0) "+" else ""}${this.priceChangeAbsolute}"
-
-    )
+        priceChangeAbsoluteText = "${if (this.priceChangeAbsolute >= 0) "+" else ""}${this.priceChangeAbsolute}",
+        sparklineData = emptyList()
+        )
 }
 
 // Maps entire storage collection streams seamlessly without allocating heavy loop objects
@@ -50,15 +50,16 @@ fun CryptoAssetWithHistory.toCryptoAssetWithChart(): CryptoAsset {
     // 2. Map the parent asset entity attributes directly using your optimized formatting tokens
     return CryptoAsset(
         id = this.asset.id,
-        symbol = this.asset.symbol,
         name = this.asset.name,
+        symbol = this.asset.symbol,
         priceUsd = this.asset.priceUsd.toString(),
         marketCapUsd = this.asset.marketCapUsd.toString(),
         priceChange24hText = "${if (this.asset.changePercent24Hr >= 0) "+" else ""}${((this.asset.changePercent24Hr * 100).roundToInt() / 100.0)}%",
         isPricePositive = this.asset.changePercent24Hr >= 0.0,
         volumeUsd24Hr = this.asset.volumeUsd24Hr.toString(),
         totalCirculatingSupply = this.asset.totalCirculatingSupply.toString(),
-        priceChangeAbsoluteText = "${if (this.asset.priceChangeAbsolute >= 0) "+" else ""}${this.asset.priceChangeAbsolute}"
+        priceChangeAbsoluteText = "${if (this.asset.priceChangeAbsolute >= 0) "+" else ""}${this.asset.priceChangeAbsolute}",
+        sparklineData = this.history.sortedBy { it.timestamp }.map { it.priceUsd }
         // Note: Make sure to verify if your main CryptoAsset constructor accepts the `dataPoints: List<DataPoint>` list property!
     )
 }
@@ -85,10 +86,17 @@ fun CryptoAssetWithHistory.toDomainModelWithChart(): CryptoAsset {
         isPricePositive = this.asset.changePercent24Hr >= 0.0,
         volumeUsd24Hr = this.asset.volumeUsd24Hr.toString(),
         totalCirculatingSupply = this.asset.totalCirculatingSupply.toString(),
-        priceChangeAbsoluteText = this.asset.priceChangeAbsolute.toString()
+        priceChangeAbsoluteText = this.asset.priceChangeAbsolute.toString(),
         // Note: If you add `val sparklineData: List<DataPoint>` to CryptoAsset later,
-        // map it here: sparklineData = this.history.map { DataPoint(it.timestamp.toFloat(), it.priceUsd.toFloat(), "") }
+        sparklineData = this.history.sortedBy { it.timestamp }.map { it.priceUsd }
     )
+}
+
+/**
+ * Transforms collections of relational database models in a single pass.
+ */
+fun List<CryptoAssetWithHistory>.toDomainModelWithChartList(): List<CryptoAsset> {
+    return this.map { it.toDomainModelWithChart() }
 }
 
 // Transforms flat collection array primitives without relational joins for fast cache returns
@@ -104,14 +112,8 @@ fun List<CryptoAssetRoomEntity>.toDomainModelWithChartListFromEntities(): List<C
             isPricePositive = entity.changePercent24Hr >= 0.0,
             volumeUsd24Hr = entity.volumeUsd24Hr.toString(),
             totalCirculatingSupply = entity.totalCirculatingSupply.toString(),
-            priceChangeAbsoluteText = entity.priceChangeAbsolute.toString()
+            priceChangeAbsoluteText = entity.priceChangeAbsolute.toString(),
+            sparklineData = emptyList()
         )
     }
-}
-
-/**
- * Transforms collections of relational database models in a single pass.
- */
-fun List<CryptoAssetWithHistory>.toDomainModelWithChartList(): List<CryptoAsset> {
-    return this.map { it.toDomainModelWithChart() }
 }

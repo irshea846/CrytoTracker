@@ -20,6 +20,5 @@ data class CryptoAssetRoomEntity(
     // === WEEK 13 SCHEMA EXPANSION EXTENSIONS FOR ADVANCED UI SPARK LINES ===
     val volumeUsd24Hr: Double,
     val totalCirculatingSupply: Double,
-    val priceChangeAbsolute: Double
-
+    val priceChangeAbsolute: Double,
 )
