@@ -64,4 +64,13 @@ class CryptoListViewModel(
         }
     }
 
+    suspend fun observeLiveMarketTicker() {
+        repository.startMarketTickerFlow().collect { state ->
+            // Update _screenState only if we don't already have active data showing,
+            // so background ticks refresh the Room Flow silently without flashing a spinner!
+            if (_screenState.value !is UIResourceState.Success) {
+                _screenState.value = state
+            }
+        }
+    }
 }

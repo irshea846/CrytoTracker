@@ -11,14 +11,18 @@ import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.CryptoRepository
 import com.rshea.cryptotracker.domain.UIResourceState
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.random.Random // Standard KMP random utility tool
 import kotlin.random.nextInt
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 class CryptoRepositoryImpl(
@@ -33,6 +37,13 @@ class CryptoRepositoryImpl(
     override fun observeCryptoAssetsStream(): Flow<List<CryptoAsset>> {
         return cryptoAssetDao.getCryptoAssetsWithHistoryFlow().map { relationalList ->
             relationalList.toDomainModelWithChartList()
+        }
+    }
+
+    override fun startMarketTickerFlow(intervalMillis: Long): Flow<UIResourceState<List<CryptoAsset>>> = flow {
+        while (currentCoroutineContext().isActive) {
+            emit(getTrackedCryptoAssets())
+            delay(intervalMillis.milliseconds)
         }
     }
 
@@ -94,8 +105,13 @@ class CryptoRepositoryImpl(
                 // 4. ATOMIC DATABASE UPDATE PASS: Room natively runs bulk inserts using OnConflictStrategy.REPLACE
                 cryptoAssetDao.insertCryptoAssets(roomEntities)
 
-                // 5. Generate and pass down matching child history rows if your network payload contains history arrays
-                val historyPoints = rawDtos.map { dto ->
+                // 5. Map real 7-day sparkline points from the Ktor DTO payload into Room history rows
+                // and record the live market price tick into Room history for each asset
+                val dayMillis = 86_400_000L
+                val rolling7DayThreshold = currentTimestamp - (7 * dayMillis)
+
+                // 5. Record the live market price tick into Room history for each asset
+                val realHistoryPoints = rawDtos.map { dto ->
                     CryptoHistoryRoomEntity(
                         assetId = dto.id,
                         timestamp = currentTimestamp,
@@ -103,8 +119,10 @@ class CryptoRepositoryImpl(
                     )
                 }
 
-                // 6. Fire the atomic transactional gateway, capturing the returned eviction count safely
-                val totalEvictedRows = cryptoAssetDao.insertAndPruneHistory(historyPoints, rolling24HourThreshold)
+                // 6. Fire the atomic transactional gateway using the 7-day eviction window
+                val totalEvictedRows =
+                        cryptoAssetDao.insertAndPruneHistory(realHistoryPoints, rolling7DayThreshold)
+                println("🧹 [Worker $workerId] Inserted ${realHistoryPoints.size} 7-day history points and evicted $totalEvictedRows stale rows.")
 
                 // 7. SINGLE SOURCE OF TRUTH: Read storage data back directly using our local mappers
                 // (Note: Since our UI layer already observes observeCryptoAssetsStream(), this instantly forces screen redraws!)

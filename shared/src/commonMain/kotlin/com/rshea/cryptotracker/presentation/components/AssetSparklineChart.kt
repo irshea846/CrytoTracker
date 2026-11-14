@@ -36,6 +36,9 @@ fun AssetSparklineChart(
     val strokePath = remember { Path() }
     val fillPath = remember { Path() }
 
+    // Inside AssetSparklineChart.kt right above `if (pricePoints.size < 2) return`
+    println("📈 [Sparkline] Points count: ${pricePoints.size} -> $pricePoints")
+
     Canvas(modifier = modifier.fillMaxSize()) {
         val width = size.width
         val height = size.height

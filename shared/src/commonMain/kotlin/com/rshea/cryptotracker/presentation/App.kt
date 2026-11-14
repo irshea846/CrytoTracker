@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.UIResourceState
 import com.rshea.cryptotracker.presentation.components.AssetSparklineChart
@@ -22,10 +23,13 @@ fun App(
 ) {
     // 1. LIFECYCLE HOOK: Trigger the initial load exactly once when the screen appears.
     // This prevents infinite loops during recomposition.
-    LaunchedEffect(Unit) {
-        viewModel.loadCryptoMarketData()
-    }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            viewModel.observeLiveMarketTicker()
+        }
+    }
     MaterialTheme {
         // 2. Natively collect your StateFlow stream. UI redraws automatically on any state change!
         val screenState by viewModel.screenState.collectAsStateWithLifecycle()
@@ -148,8 +152,8 @@ fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
                             pricePoints = crypto.sparklineData, // Match your CryptoAsset list property name
                             isPositiveTrend = crypto.isPricePositive,
                             modifier = Modifier
-                                .width(84.dp)
-                                .height(36.dp)
+                                .padding(horizontal = 8.dp)
+                                .requiredSize(width = 84.dp, height = 36.dp) // Prevents Row children from collapsing Canvas width to 0
                         )
 
                         Column(horizontalAlignment = Alignment.End) {
