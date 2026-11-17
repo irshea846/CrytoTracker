@@ -120,7 +120,11 @@ fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(cryptoAssets) { crypto ->
+            items(
+                items = cryptoAssets,
+                key = { crypto -> crypto.id },
+                contentType = { "crypto_asset_card" }
+            ) { crypto ->
                 // Polish Card Component Wrapper
                 Card(
                     modifier = Modifier.fillMaxWidth(),

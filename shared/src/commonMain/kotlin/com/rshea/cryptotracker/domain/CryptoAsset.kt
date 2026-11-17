@@ -1,9 +1,12 @@
 package com.rshea.cryptotracker.domain
 
+import androidx.compose.runtime.Immutable
+
 /**
  * Pure Domain Presentation Model.
  * Represents data optimized exactly for UI consumption.
  */
+@Immutable
 data class CryptoAsset(
     val id: String,
     val name: String,
