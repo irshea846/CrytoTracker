@@ -1,10 +1,12 @@
 package com.rshea.cryptotracker.presentation
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,11 +20,10 @@ import com.rshea.cryptotracker.presentation.components.AssetSparklineChart
 
 @Composable
 fun App(
-    // 1. Dependency Inversion: Pass the service into the screen function as a parameter boundary
     viewModel: CryptoListViewModel
 ) {
-    // 1. LIFECYCLE HOOK: Trigger the initial load exactly once when the screen appears.
-    // This prevents infinite loops during recomposition.
+    val screenState by viewModel.screenState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     LaunchedEffect(lifecycleOwner) {
@@ -30,18 +31,18 @@ fun App(
             viewModel.observeLiveMarketTicker()
         }
     }
-    MaterialTheme {
-        // 2. Natively collect your StateFlow stream. UI redraws automatically on any state change!
-        val screenState by viewModel.screenState.collectAsStateWithLifecycle()
 
+    MaterialTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(40.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding() // Adds safe clearance below iPhone Dynamic Island & Android status bar
+                    .padding(24.dp)
             ) {
-                // 1. Structured Corporate Header Layout
                 Text(
                     text = "Live Crypto Asset Board",
                     style = MaterialTheme.typography.headlineMedium,
@@ -53,38 +54,80 @@ fun App(
                     text = "Enterprise KMP Multi-Module Architecture",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(vertical = 16.dp)
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
 
-                // 2. State-Driven Adaptive Content Container
+                // Weight(1f) lets PullToRefreshBox & LazyColumn expand to fill the screen
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     when (val state = screenState) {
                         is UIResourceState.Loading -> LoadingStateView()
                         is UIResourceState.Error -> ErrorStateView(message = state.message)
-                        is UIResourceState.Success -> SuccessStateView(cryptoAssets = state.data)
+                        is UIResourceState.Success -> PullToRefreshAssetBoard(
+                            cryptoAssets = state.data,
+                            isStale = state.isStale,
+                            isRefreshing = isRefreshing,
+                            onRefresh = { viewModel.refreshMarketData() }
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 3. Persistent Action Execution Hook
                 Button(
-                    onClick = { viewModel.loadCryptoMarketData() },
+                    onClick = { viewModel.refreshMarketData() },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = screenState !is UIResourceState.Loading
+                    enabled = screenState !is UIResourceState.Loading && !isRefreshing
                 ) {
                     Text(
-                        text = if (screenState is UIResourceState.Loading) "Query Remote Nodes..."
-                                    else "Refresh Market Data",
+                        text = if (screenState is UIResourceState.Loading || isRefreshing)
+                            "Query Remote Nodes..."
+                        else
+                            "Refresh Market Data",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PullToRefreshAssetBoard(
+    cryptoAssets: List<CryptoAsset>,
+    isStale: Boolean,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit
+) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            AnimatedVisibility(visible = isStale) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    Text(
+                        text = "Offline Mode — Showing Cached Market Data",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
+            SuccessStateView(cryptoAssets = cryptoAssets)
         }
     }
 }
@@ -111,13 +154,13 @@ fun ErrorStateView(message: String) {
 fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
     if (cryptoAssets.isEmpty()) {
         Text(
-            text = "No asset loaded. Click trigger to query.",
+            text = "No asset loaded. Pull down or click trigger to query.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(
@@ -125,74 +168,74 @@ fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
                 key = { crypto -> crypto.id },
                 contentType = { "crypto_asset_card" }
             ) { crypto ->
-                // Polish Card Component Wrapper
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = crypto.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = crypto.symbol,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        }
-
-                        // NEW: Hardware-accelerated Canvas Sparkline
-                        AssetSparklineChart(
-                            pricePoints = crypto.sparklineData, // Match your CryptoAsset list property name
-                            isPositiveTrend = crypto.isPricePositive,
-                            modifier = Modifier
-                                .padding(horizontal = 8.dp)
-                                .requiredSize(width = 84.dp, height = 36.dp) // Prevents Row children from collapsing Canvas width to 0
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = crypto.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = crypto.symbol,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = crypto.priceUsd,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
+                            AssetSparklineChart(
+                                pricePoints = crypto.sparklineData,
+                                isPositiveTrend = crypto.isPricePositive,
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp)
+                                    .requiredSize(width = 84.dp, height = 36.dp)
                             )
-                            Text(
-                                text = crypto.priceChange24hText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (crypto.isPricePositive)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.error
-                            )
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = crypto.priceUsd,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = crypto.priceChange24hText,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (crypto.isPricePositive)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "${crypto.name} (${crypto.symbol}): ${crypto.priceUsd}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = crypto.marketCapUsd,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "${crypto.name} (${crypto.symbol}): ${crypto.priceUsd}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = crypto.marketCapUsd,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
