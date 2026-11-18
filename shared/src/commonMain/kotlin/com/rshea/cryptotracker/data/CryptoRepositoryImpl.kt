@@ -48,7 +48,7 @@ class CryptoRepositoryImpl(
     }
 
     @OptIn(ExperimentalTime::class)
-    override suspend fun getTrackedCryptoAssets(): UIResourceState<List<CryptoAsset>> {
+    override suspend fun getTrackedCryptoAssets(forceRefresh: Boolean): UIResourceState<List<CryptoAsset>> {
         val workerId = Random.nextInt(1000..9999).toString() // Platform-safe random tracking string wrapper
         println("🚀 [Worker $workerId] Arrived at Mutex Gate on Thread: ${currentCoroutineContext()}")
 
@@ -63,7 +63,7 @@ class CryptoRepositoryImpl(
                 val rolling24HourThreshold = currentTimestamp - 86_400_000L // Compute the 24-hour cutoff barrier
 
                 // 2. CHECK CACHE FRESHNESS INVARIANT
-                if (currentCachedEntities.isNotEmpty()) {
+                if (!forceRefresh && currentCachedEntities.isNotEmpty()) {
                     // Sample the timestamp from the first record in our sorted collection
                     val lastSyncTime = currentCachedEntities.first().lastUpdatedTimestamp
                     val cacheAge = currentTimestamp - lastSyncTime
@@ -136,10 +136,10 @@ class CryptoRepositoryImpl(
                 // To fetch a flat, synchronous data lookup pass, we query your DAO context
                 println("❌ [Worker $workerId] hit network error: ${e.message}. Attempting Room offline fallback lookup...")
 
-                val cachedRows = cryptoAssetDao.getAllCryptoAssetsFlow().first()
+                val cachedRows = cryptoAssetDao.getCryptoAssetsWithHistoryFlow().first()
                 if (cachedRows.isNotEmpty()) {
                     println("⚠️ [Repository] Network broken, returning ${cachedRows.size} cached Room assets.")
-                    UIResourceState.Success(cachedRows.toCryptoAssetList())
+                    UIResourceState.Success(cachedRows.toDomainModelWithChartList(), isStale = true)
                 } else {
                     UIResourceState.Error("Network failure and no local persistent cache records located in Room: ${e.message}")
                 }
