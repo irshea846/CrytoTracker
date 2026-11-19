@@ -4,7 +4,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -17,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.UIResourceState
 import com.rshea.cryptotracker.presentation.components.AssetSparklineChart
+import kotlinx.coroutines.launch
 
 @Composable
 fun App(
@@ -25,6 +32,9 @@ fun App(
     val screenState by viewModel.screenState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    val pagerState = rememberPagerState(pageCount = { 2 })
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -37,59 +47,115 @@ fun App(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding() // Adds safe clearance below iPhone Dynamic Island & Android status bar
-                    .padding(24.dp)
-            ) {
-                Text(
-                    text = "Live Crypto Asset Board",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-                Text(
-                    text = "Enterprise KMP Multi-Module Architecture",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                // Weight(1f) lets PullToRefreshBox & LazyColumn expand to fill the screen
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when (val state = screenState) {
-                        is UIResourceState.Loading -> LoadingStateView()
-                        is UIResourceState.Error -> ErrorStateView(message = state.message)
-                        is UIResourceState.Success -> PullToRefreshAssetBoard(
-                            cryptoAssets = state.data,
-                            isStale = state.isStale,
-                            isRefreshing = isRefreshing,
-                            onRefresh = { viewModel.refreshMarketData() }
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = MaterialTheme.colorScheme.background,
+                bottomBar = {
+                    NavigationBar {
+                        NavigationBarItem(
+                            selected = pagerState.currentPage == 0,
+                            onClick = {
+                                coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.List,
+                                    contentDescription = "Market"
+                                )
+                            },
+                            label = { Text("Market") }
+                        )
+                        NavigationBarItem(
+                            selected = pagerState.currentPage == 1,
+                            onClick = {
+                                coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Top Movers"
+                                )
+                            },
+                            label = { Text("Top Movers") }
                         )
                     }
                 }
+            ) { innerPadding ->
+                AppPagerContent(
+                    screenState = screenState,
+                    isRefreshing = isRefreshing,
+                    pagerState = pagerState,
+                    onRefresh = { viewModel.refreshMarketData() },
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+        }
+    }
+}
 
-                Spacer(modifier = Modifier.height(16.dp))
+@Composable
+fun AppPagerContent(
+    screenState: UIResourceState<List<CryptoAsset>>,
+    isRefreshing: Boolean,
+    pagerState: PagerState,
+    onRefresh: () -> Unit,
+    modifier: Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+    ) {
+        Text(
+            text = if (pagerState.currentPage == 0) {
+                "Live Crypto Asset Board"
+            } else {
+                "Top Positive Movers"
+            },
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+        Text(
+            text = if (pagerState.currentPage == 0) {
+                "Enterprise KMP Multi-Module Architecture"
+            } else {
+                "Filtered via Compose derivedStateOf"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
 
-                Button(
-                    onClick = { viewModel.refreshMarketData() },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = screenState !is UIResourceState.Loading && !isRefreshing
-                ) {
-                    Text(
-                        text = if (screenState is UIResourceState.Loading || isRefreshing)
-                            "Query Remote Nodes..."
-                        else
-                            "Refresh Market Data",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+        // Weight(1f) lets PullToRefreshBox & LazyColumn expand to fill the screen
+        Box(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            when (val state = screenState) {
+                is UIResourceState.Loading -> LoadingStateView()
+                is UIResourceState.Error -> ErrorStateView(message = state.message)
+                is UIResourceState.Success -> {
+                    val positiveMovers by remember(state.data) {
+                        derivedStateOf {
+                            state.data.filter { it.isPricePositive }
+                        }
+                    }
+
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        val displayedAssets =
+                            if (page == 0) state.data else positiveMovers
+                        PullToRefreshAssetBoard(
+                            cryptoAssets = displayedAssets,
+                            isStale = state.isStale,
+                            isRefreshing = isRefreshing,
+                            onRefresh = onRefresh
+                        )
+                    }
                 }
             }
         }
