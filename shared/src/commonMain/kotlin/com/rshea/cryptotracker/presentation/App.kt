@@ -1,6 +1,7 @@
 package com.rshea.cryptotracker.presentation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.rshea.cryptotracker.domain.CryptoAsset
 import com.rshea.cryptotracker.domain.UIResourceState
 import com.rshea.cryptotracker.presentation.components.AssetSparklineChart
@@ -35,6 +39,7 @@ fun App(
 
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
+    val navController = rememberNavController()
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -47,47 +52,69 @@ fun App(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = MaterialTheme.colorScheme.background,
-                bottomBar = {
-                    NavigationBar {
-                        NavigationBarItem(
-                            selected = pagerState.currentPage == 0,
-                            onClick = {
-                                coroutineScope.launch { pagerState.animateScrollToPage(0) }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.List,
-                                    contentDescription = "Market"
+            NavHost(
+                navController = navController,
+                startDestination = "board"
+            ) {
+                composable("board") {
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        containerColor = MaterialTheme.colorScheme.background,
+                        bottomBar = {
+                            NavigationBar {
+                                NavigationBarItem(
+                                    selected = pagerState.currentPage == 0,
+                                    onClick = {
+                                        coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.List,
+                                            contentDescription = "Market"
+                                        )
+                                    },
+                                    label = { Text("Market") }
                                 )
-                            },
-                            label = { Text("Market") }
-                        )
-                        NavigationBarItem(
-                            selected = pagerState.currentPage == 1,
-                            onClick = {
-                                coroutineScope.launch { pagerState.animateScrollToPage(1) }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "Top Movers"
+                                NavigationBarItem(
+                                    selected = pagerState.currentPage == 1,
+                                    onClick = {
+                                        coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = "Top Movers"
+                                        )
+                                    },
+                                    label = { Text("Top Movers") }
                                 )
-                            },
-                            label = { Text("Top Movers") }
+                            }
+                        }
+                    ) { innerPadding ->
+                        AppPagerContent(
+                            screenState = screenState,
+                            isRefreshing = isRefreshing,
+                            pagerState = pagerState,
+                            onRefresh = { viewModel.refreshMarketData() },
+                            modifier = Modifier.padding(innerPadding),
+                            onAssetClick = { assetId ->
+                                navController.navigate("detail/$assetId")
+                            }
                         )
                     }
                 }
-            ) { innerPadding ->
-                AppPagerContent(
-                    screenState = screenState,
-                    isRefreshing = isRefreshing,
-                    pagerState = pagerState,
-                    onRefresh = { viewModel.refreshMarketData() },
-                    modifier = Modifier.padding(innerPadding)
-                )
+
+                composable("detail/{assetId}") { backStackEntry ->
+                    val assetId = backStackEntry.arguments?.getString("assetId")
+                    val selectedAsset = (screenState as? UIResourceState.Success)
+                        ?.data
+                        ?.find { it.id == assetId }
+
+                    AssetDetailScreen(
+                        asset = selectedAsset,
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }
@@ -99,7 +126,8 @@ fun AppPagerContent(
     isRefreshing: Boolean,
     pagerState: PagerState,
     onRefresh: () -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    onAssetClick: (String) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -153,7 +181,8 @@ fun AppPagerContent(
                             cryptoAssets = displayedAssets,
                             isStale = state.isStale,
                             isRefreshing = isRefreshing,
-                            onRefresh = onRefresh
+                            onRefresh = onRefresh,
+                            onAssetClick = onAssetClick
                         )
                     }
                 }
@@ -168,7 +197,8 @@ fun PullToRefreshAssetBoard(
     cryptoAssets: List<CryptoAsset>,
     isStale: Boolean,
     isRefreshing: Boolean,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onAssetClick: (String) -> Unit
 ) {
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -193,7 +223,10 @@ fun PullToRefreshAssetBoard(
                 }
             }
 
-            SuccessStateView(cryptoAssets = cryptoAssets)
+            SuccessStateView(
+                cryptoAssets = cryptoAssets,
+                onAssetClick = onAssetClick
+            )
         }
     }
 }
@@ -217,7 +250,10 @@ fun ErrorStateView(message: String) {
 }
 
 @Composable
-fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
+fun SuccessStateView(
+    cryptoAssets: List<CryptoAsset>,
+    onAssetClick: (String) -> Unit
+) {
     if (cryptoAssets.isEmpty()) {
         Text(
             text = "No asset loaded. Pull down or click trigger to query.",
@@ -236,7 +272,7 @@ fun SuccessStateView(cryptoAssets: List<CryptoAsset>) {
             ) { crypto ->
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().clickable { onAssetClick(crypto.id) },
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
