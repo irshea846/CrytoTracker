@@ -103,7 +103,7 @@ class CryptoRepositoryImpl(
                 }
 
                 // 4. ATOMIC DATABASE UPDATE PASS: Room natively runs bulk inserts using OnConflictStrategy.REPLACE
-                cryptoAssetDao.insertCryptoAssets(roomEntities)
+                cryptoAssetDao.upsertCryptoAssetsSafely(roomEntities)
 
                 // 5. Map real 7-day sparkline points from the Ktor DTO payload into Room history rows
                 // and record the live market price tick into Room history for each asset

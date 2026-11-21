@@ -53,6 +53,8 @@ fun AssetDetailScreen(
             return@Scaffold
         }
 
+        println("🔍 [Detail] ${asset.id} history count: ${asset.sparklineData.size} -> ${asset.sparklineData}")
+
         val chartDataPoints = remember(asset.sparklineData) {
             asset.sparklineData.mapIndexed { index, price ->
                 DataPoint(
