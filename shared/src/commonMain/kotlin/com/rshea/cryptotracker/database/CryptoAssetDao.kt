@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -33,10 +34,23 @@ interface CryptoAssetDao {
     @Query("SELECT * FROM room_crypto_assets ORDER BY rank ASC")
     fun getCryptoAssetsWithHistoryFlow(): Flow<List<CryptoAssetWithHistory>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCryptoHistory(history: List<CryptoHistoryRoomEntity>): List<Long>
+//    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertNewCryptoAssets(assets: List<CryptoAssetRoomEntity>): List<Long>
 
-    // === WEEK 14 AUTOMATED ROLLING WINDOW ROBUST STORAGE PRUNING ===
+    @androidx.room.Update
+    suspend fun updateExistingCryptoAssets(assets: List<CryptoAssetRoomEntity>): Int
+
+    @Transaction
+    suspend fun upsertCryptoAssetsSafely(assets: List<CryptoAssetRoomEntity>): Int {
+        val insertResults = insertNewCryptoAssets(assets)
+        val toUpdate = assets.filterIndexed { index, _ -> insertResults[index] == -1L }
+        return if (toUpdate.isNotEmpty()) {
+            updateExistingCryptoAssets(toUpdate)
+        } else {
+            0
+        }
+    }
 
     @Query("DELETE FROM room_crypto_history WHERE timestamp < :thresholdTimestamp")
     suspend fun pruneHistoryOlderThan(thresholdTimestamp: Long): Int
@@ -46,6 +60,9 @@ interface CryptoAssetDao {
      * and instantly runs a clean sweep to evict trend items older than the calculated threshold time.
      * FIX: Return Int instead of Unit to bypass the KSP2 'unexpected jvm signature V' compiler bug.
      */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCryptoHistory(history: List<CryptoHistoryRoomEntity>): List<Long>
+
     @Transaction
     suspend fun insertAndPruneHistory(history: List<CryptoHistoryRoomEntity>, thresholdTimestamp: Long): Int {
         insertCryptoHistory(history)
